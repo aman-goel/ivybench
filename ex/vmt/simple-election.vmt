@@ -1,0 +1,60 @@
+(declare-sort acceptor 0)
+(declare-sort quorum 0)
+(declare-sort proposer 0)
+
+(define-fun .acceptor ((S acceptor)) acceptor (! S :sort 2))
+(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
+(define-fun .proposer ((S proposer)) proposer (! S :sort 2))
+
+(declare-fun __leader (proposer) Bool)
+(declare-fun __promise (acceptor proposer) Bool)
+(declare-fun __start (proposer) Bool)
+
+(declare-fun leader (proposer) Bool)
+(declare-fun promise (acceptor proposer) Bool)
+(declare-fun start (proposer) Bool)
+
+(define-fun .leader ((V0 proposer)) Bool (! (__leader V0) :next leader))
+(define-fun .promise ((V0 acceptor) (V1 proposer)) Bool (! (__promise V0 V1) :next promise))
+(define-fun .start ((V0 proposer)) Bool (! (__start V0) :next start))
+
+(declare-fun member (acceptor quorum) Bool)
+
+(define-fun .member ((V0 acceptor) (V1 quorum)) Bool (! (member V0 V1) :global true))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((P1 proposer) (P2 proposer)) (=> (and (__leader P1) (__leader P2)) (= P1 P2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (forall ((Q1 quorum) (Q2 quorum)) (exists ((A acceptor)) (and (member A Q1) (member A Q2))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 proposer)) (= (__start V0) false)) (forall ((V0 acceptor) (V1 proposer)) (= (__promise V0 V1) false)) (forall ((V0 proposer)) (= (__leader V0) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:decide () Bool (! 
+ (let (($v (exists ((V__fml:p proposer) (V__fml:q quorum)) (and (forall ((V0 proposer)) (= (leader V0) (ite (= V0 V__fml:p) true (__leader V0)))) (forall ((A acceptor)) (=> (member A V__fml:q) (__promise A V__fml:p)))))
+ ))
+ (and $v))
+ :action ext:decide))
+
+(define-fun .action_ext:send_1a () Bool (! 
+ (let (($v (exists ((V__fml:p proposer)) (forall ((V0 proposer)) (= (start V0) (ite (= V0 V__fml:p) true (__start V0)))))
+ ))
+ (and $v))
+ :action ext:send_1a))
+
+(define-fun .action_ext:send_1b () Bool (! 
+ (let (($v (exists ((V__fml:a acceptor) (V__fml:p proposer)) (and (forall ((V0 acceptor) (V1 proposer)) (= (promise V0 V1) (ite (and (= V0 V__fml:a) (= V1 V__fml:p)) true (__promise V0 V1)))) (__start V__fml:p) (forall ((P proposer)) (not (__promise V__fml:a P)))))
+ ))
+ (and $v))
+ :action ext:send_1b))
+

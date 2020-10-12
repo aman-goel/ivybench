@@ -1,0 +1,61 @@
+(declare-sort epoch 0)
+(declare-sort node 0)
+
+(define-fun .epoch ((S epoch)) epoch (! S :sort 0))
+(define-fun .node ((S node)) node (! S :sort 2))
+
+(declare-fun __held (node) Bool)
+(declare-fun __transfer_msg (epoch node) Bool)
+(declare-fun __locked (epoch node) Bool)
+(declare-fun __gt (epoch node) Bool)
+
+(declare-fun held (node) Bool)
+(declare-fun transfer_msg (epoch node) Bool)
+(declare-fun locked (epoch node) Bool)
+(declare-fun gt (epoch node) Bool)
+
+(define-fun .held ((V0 node)) Bool (! (__held V0) :next held))
+(define-fun .transfer_msg ((V0 epoch) (V1 node)) Bool (! (__transfer_msg V0 V1) :next transfer_msg))
+(define-fun .locked ((V0 epoch) (V1 node)) Bool (! (__locked V0 V1) :next locked))
+(define-fun .gt ((V0 epoch) (V1 node)) Bool (! (__gt V0 V1) :next gt))
+
+(declare-fun le (epoch epoch) Bool)
+(declare-fun first () node)
+(declare-fun zero () epoch)
+
+(define-fun .le ((V0 epoch) (V1 epoch)) Bool (! (le V0 V1) :global true))
+(define-fun .first () node (! first :global true))
+(define-fun .zero () epoch (! zero :global true))
+
+(declare-fun __ts0_a () Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((E epoch) (N1 node) (N2 node)) (=> (and (__locked E N1) (__locked E N2)) (= N1 N2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X epoch)) (le X X)) (forall ((X epoch) (Y epoch) (Z epoch)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X epoch) (Y epoch)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X epoch) (Y epoch)) (or (le X Y) (le Y X))) (forall ((X epoch)) (le zero X)))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__held V0) (= V0 first))) (forall ((V0 epoch) (V1 node)) (= (__gt V0 V1) (not (= V0 zero)))) (forall ((V0 epoch) (V1 node)) (= (__transfer_msg V0 V1) false)) (forall ((V0 epoch) (V1 node)) (= (__locked V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:accept () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:e epoch)) (and (forall ((V0 node)) (= (held V0) (ite __ts0_a (ite (= V0 V__fml:dst) true (__held V0)) (__held V0)))) (forall ((V0 epoch) (V1 node)) (= (locked V0 V1) (ite __ts0_a (ite (and (= V0 V__fml:e) (= V1 V__fml:dst)) true (__locked V0 V1)) (__locked V0 V1)))) (forall ((V0 epoch) (V1 node)) (= (gt V0 V1) (ite __ts0_a (ite (= V1 V__fml:dst) (ite (not (le V0 V__fml:e)) true false) (__gt V0 V1)) (__gt V0 V1)))) (= __ts0_a (__gt V__fml:e V__fml:dst)) (__transfer_msg V__fml:e V__fml:dst)))
+ ))
+ (and $v))
+ :action ext:accept))
+
+(define-fun .action_ext:grant () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:e epoch) (V__fml:src node)) (and (forall ((V0 node)) (= (held V0) (ite (= V0 V__fml:src) false (__held V0)))) (forall ((V0 epoch) (V1 node)) (= (transfer_msg V0 V1) (ite (and (= V0 V__fml:e) (= V1 V__fml:dst)) true (__transfer_msg V0 V1)))) (__held V__fml:src) (__gt V__fml:e V__fml:src)))
+ ))
+ (and $v))
+ :action ext:grant))
+

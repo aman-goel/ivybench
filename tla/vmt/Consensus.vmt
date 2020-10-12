@@ -1,0 +1,28 @@
+(declare-sort value 0)
+
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __chosen (value) Bool)
+
+(declare-fun chosen (value) Bool)
+
+(define-fun .chosen ((V0 value)) Bool (! (__chosen V0) :next chosen))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((V1 value) (V2 value)) (=> (and (__chosen V1) (__chosen V2)) (= V1 V2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (forall ((V0 value)) (= (__chosen V0) false))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:choose () Bool (! 
+ (let (($v (exists ((V__fml:v value)) (and (forall ((V0 value)) (= (chosen V0) (ite (= V0 V__fml:v) true (__chosen V0)))) (forall ((V value)) (not (__chosen V)))))
+ ))
+ (and $v))
+ :action ext:choose))
+

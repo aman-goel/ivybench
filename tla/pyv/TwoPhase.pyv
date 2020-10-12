@@ -1,0 +1,88 @@
+sort resource_manager
+
+mutable relation working(resource_manager)
+mutable relation prepared(resource_manager)
+mutable relation committed(resource_manager)
+mutable relation aborted(resource_manager)
+
+mutable relation tm_init
+mutable relation tm_committed
+mutable relation tm_aborted
+mutable relation tm_prepared(resource_manager)
+
+mutable relation msg_prepared(resource_manager)
+mutable relation msg_commit
+mutable relation msg_abort
+
+init working(R)
+init !prepared(R)
+init !committed(R)
+init !aborted(R)
+
+init tm_init
+init !tm_committed
+init !tm_aborted
+init !tm_prepared(R)
+
+init !msg_prepared(R)
+init !msg_commit
+init !msg_abort
+
+transition tMRcvPrepared(rm:resource_manager)
+  modifies tm_prepared
+  & (old(tm_init))
+  & (old(msg_prepared(rm)))
+  & (tm_prepared(RM) <-> old(tm_prepared(RM)) | (RM = rm))
+
+transition tMCommit()
+  modifies tm_init, tm_committed, tm_aborted, msg_commit
+  & (old(tm_init))
+  & (forall R. old(tm_prepared(R)))
+  & (tm_init <-> false)
+  & (tm_committed <-> true)
+  & (tm_aborted <-> false)
+  & (msg_commit <-> true)
+
+transition tMAbort()
+  modifies tm_init, tm_committed, tm_aborted, msg_abort
+  & (old(tm_init))
+  & (tm_init <-> false)
+  & (tm_committed <-> false)
+  & (tm_aborted <-> true)
+  & (msg_abort <-> true)
+
+transition rMPrepare(rm:resource_manager)
+  modifies working, prepared, committed, aborted, msg_prepared
+  & (old(working(rm)))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) | (RM = rm))
+  & (committed(RM) <-> old(committed(RM)) & (RM != rm))
+  & (aborted(RM) <-> old(aborted(RM)) & (RM != rm))
+  & (msg_prepared(RM) <-> old(msg_prepared(RM)) | (RM = rm))
+
+transition rMChooseToAbort(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(working(rm)))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) & (RM != rm))
+  & (committed(RM) <-> old(committed(RM)) & (RM != rm))
+  & (aborted(RM) <-> old(aborted(RM)) | (RM = rm))
+
+transition rMRcvCommitMsg(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(msg_commit))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) & (RM != rm))
+  & (committed(RM) <-> old(committed(RM)) | (RM = rm))
+  & (aborted(RM) <-> old(aborted(RM)) & (RM != rm))
+
+transition rMRcvAbortMsg(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(msg_abort))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) & (RM != rm))
+  & (committed(RM) <-> old(committed(RM)) & (RM != rm))
+  & (aborted(RM) <-> old(aborted(RM)) | (RM = rm))
+
+
+safety [prop] (forall R1, R2. !(aborted(R1) & committed(R2)) )

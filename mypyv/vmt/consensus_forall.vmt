@@ -1,0 +1,92 @@
+(declare-sort quorum 0)
+(declare-sort node 0)
+(declare-sort value 0)
+
+(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __votes (node node) Bool)
+(declare-fun __vote_request_msg (node node) Bool)
+(declare-fun __vote_msg (node node) Bool)
+(declare-fun __leader (node) Bool)
+(declare-fun __voted (node) Bool)
+(declare-fun __decided (node value) Bool)
+(declare-fun __voting_quorum () quorum)
+
+(declare-fun votes (node node) Bool)
+(declare-fun vote_request_msg (node node) Bool)
+(declare-fun vote_msg (node node) Bool)
+(declare-fun leader (node) Bool)
+(declare-fun voted (node) Bool)
+(declare-fun decided (node value) Bool)
+(declare-fun voting_quorum () quorum)
+
+(define-fun .votes ((V0 node) (V1 node)) Bool (! (__votes V0 V1) :next votes))
+(define-fun .vote_request_msg ((V0 node) (V1 node)) Bool (! (__vote_request_msg V0 V1) :next vote_request_msg))
+(define-fun .vote_msg ((V0 node) (V1 node)) Bool (! (__vote_msg V0 V1) :next vote_msg))
+(define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
+(define-fun .voted ((V0 node)) Bool (! (__voted V0) :next voted))
+(define-fun .decided ((V0 node) (V1 value)) Bool (! (__decided V0 V1) :next decided))
+(define-fun .voting_quorum () quorum (! __voting_quorum :next voting_quorum))
+
+(declare-fun member (node quorum) Bool)
+
+(define-fun .member ((V0 node) (V1 quorum)) Bool (! (member V0 V1) :global true))
+
+(declare-fun __fml:nondet () Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((N1 node) (N2 node) (V1 value) (V2 value)) (=> (and (__decided N1 V1) (__decided N2 V2)) (= V1 V2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (forall ((Q1 quorum) (Q2 quorum)) (exists ((N node)) (and (member N Q1) (member N Q2))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 node)) (= (__vote_request_msg V0 V1) false)) (forall ((V0 node)) (= (__voted V0) false)) (forall ((V0 node) (V1 node)) (= (__vote_msg V0 V1) false)) (forall ((V0 node) (V1 node)) (= (__votes V0 V1) false)) (forall ((V0 node)) (= (__leader V0) false)) (forall ((V0 node) (V1 value)) (= (__decided V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:send_vote () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (vote_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__vote_msg V0 V1)))) (forall ((V0 node)) (= (voted V0) (ite (= V0 V__fml:src) true (__voted V0)))) (forall ((V0 node) (V1 node)) (= (vote_request_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) __fml:nondet (__vote_request_msg V0 V1)))) (not (__voted V__fml:src)) (__vote_request_msg V__fml:dst V__fml:src)))
+ ))
+ (and $v))
+ :action ext:send_vote))
+
+(define-fun .action_ext:become_leader () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (leader V0) (ite (= V0 V__fml:n) true (__leader V0)))) (forall ((N node)) (=> (member N __voting_quorum) (__votes V__fml:n N)))))
+ ))
+ (and $v))
+ :action ext:become_leader))
+
+(define-fun .action_ext:recv_vote () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:sender node)) (and (forall ((V0 node) (V1 node)) (= (votes V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:sender)) true (__votes V0 V1)))) (__vote_msg V__fml:sender V__fml:n)))
+ ))
+ (and $v))
+ :action ext:recv_vote))
+
+(define-fun .action_ext:choose_voting_quorum () Bool (! 
+ (let (($v (exists ((V__fml:q quorum) (V__fml:sn node)) (and (= voting_quorum V__fml:q) (forall ((N node)) (=> (member N V__fml:q) (__votes V__fml:sn N)))))
+ ))
+ (and $v))
+ :action ext:choose_voting_quorum))
+
+(define-fun .action_ext:send_request_vote () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (forall ((V0 node) (V1 node)) (= (vote_request_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__vote_request_msg V0 V1)))))
+ ))
+ (and $v))
+ :action ext:send_request_vote))
+
+(define-fun .action_ext:decide () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 value)) (= (decided V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:v)) true (__decided V0 V1)))) (__leader V__fml:n) (forall ((V value)) (not (__decided V__fml:n V)))))
+ ))
+ (and $v))
+ :action ext:decide))
+

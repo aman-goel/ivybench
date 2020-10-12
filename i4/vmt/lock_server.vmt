@@ -1,0 +1,39 @@
+(declare-sort server 0)
+(declare-sort client 0)
+
+(define-fun .server ((S server)) server (! S :sort 1))
+(define-fun .client ((S client)) client (! S :sort 2))
+
+(declare-fun __link (client server) Bool)
+(declare-fun __semaphore (server) Bool)
+
+(declare-fun link (client server) Bool)
+(declare-fun semaphore (server) Bool)
+
+(define-fun .link ((V0 client) (V1 server)) Bool (! (__link V0 V1) :next link))
+(define-fun .semaphore ((V0 server)) Bool (! (__semaphore V0) :next semaphore))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((C1 client) (C2 client) (S server)) (=> (and (__link C1 S) (__link C2 S)) (= C1 C2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 server)) (= (__semaphore V0) true)) (forall ((V0 client) (V1 server)) (= (__link V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:connect () Bool (! 
+ (let (($v (exists ((V__fml:c client) (V__fml:s server)) (and (forall ((V0 client) (V1 server)) (= (link V0 V1) (ite (and (= V0 V__fml:c) (= V1 V__fml:s)) true (__link V0 V1)))) (forall ((V0 server)) (= (semaphore V0) (ite (= V0 V__fml:s) false (__semaphore V0)))) (__semaphore V__fml:s)))
+ ))
+ (and $v))
+ :action ext:connect))
+
+(define-fun .action_ext:disconnect () Bool (! 
+ (let (($v (exists ((V__fml:c client) (V__fml:s server)) (and (forall ((V0 client) (V1 server)) (= (link V0 V1) (ite (and (= V0 V__fml:c) (= V1 V__fml:s)) false (__link V0 V1)))) (forall ((V0 server)) (= (semaphore V0) (ite (= V0 V__fml:s) true (__semaphore V0)))) (__link V__fml:c V__fml:s)))
+ ))
+ (and $v))
+ :action ext:disconnect))
+

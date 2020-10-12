@@ -1,0 +1,75 @@
+sort packet
+sort node
+
+mutable relation pending(packet, node, node)
+immutable function src(packet): node
+immutable function dst(packet): node
+immutable relation link(node, node) @no_minimize
+
+mutable relation route_dom(node, node)
+mutable relation route_tc(node, node, node)
+
+axiom !link(X, X)
+axiom !link(X, Y) | link(Y, X)
+
+init !route_dom(N, X)
+init (route_tc(N, X, Y) = (X = Y))
+init !pending(P, S, T)
+
+transition new_packet(p: packet)
+    modifies pending
+    & (pending(P, N1, N2) <-> old(pending(P, N1, N2)) | (P = p & N1 = src(p) & N2 = src(p)))
+
+transition flood(p: packet, sw0: node, sw1: node, sw2: node)
+    modifies route_dom, route_tc, pending
+    & old(pending(p, sw0, sw1))
+    & (!old(route_dom(dst(p), sw1)))
+    & if (!old(route_dom(src(p), sw1)) & src(p) != sw1)
+      then 
+      & (route_dom(N1, N2) <-> old(route_dom(N1, N2)) | (N1 = src(p) & N2 = sw1))
+      & (route_tc(N1, N2, N3) <-> old(route_tc(N1, N2, N3)) | (N1 = src(p) & (old(route_tc(src(p), N2, sw1)) & old(route_tc(src(p), sw0, N3)))))
+      & if (dst(p) != sw1)
+        then 
+        & (forall N2. pending(p, sw1, N2) <-> link(sw1, N2) & N2 != sw0)
+        & (forall P, N1, N2. (P != p | N1 != sw1) -> (pending(P, N1, N2) <-> old(pending(P, N1, N2))))
+        else
+        & (forall P, N1, N2. pending(P, N1, N2) <-> old(pending(P, N1, N2)))
+      else
+      & (route_dom(N1, N2) <-> old(route_dom(N1, N2)))
+      & (route_tc(N1, N2, N3) <-> old(route_tc(N1, N2, N3)))
+      & if (dst(p) != sw1)
+        then 
+        & (forall N2. pending(p, sw1, N2) <-> link(sw1, N2) & N2 != sw0)
+        & (forall P, N1, N2. (P != p | N1 != sw1) -> (pending(P, N1, N2) <-> old(pending(P, N1, N2))))
+        else
+        & (forall P, N1, N2. pending(P, N1, N2) <-> old(pending(P, N1, N2)))
+
+transition route(p: packet, sw0: node, sw1: node, sw2: node)
+    modifies route_dom, route_tc, pending
+    & old(pending(p, sw0, sw1))
+    & old(route_dom(dst(p), sw1))
+    & (old(route_tc(dst(p), sw1, sw2)) & sw1 != sw2 & ((old(route_tc(dst(p), sw1, Z)) & sw1 != Z) -> old(route_tc(dst(p), sw2, Z))))
+    & if (!old(route_dom(src(p), sw1)) & src(p) != sw1)
+      then 
+      & (route_dom(N1, N2) <-> old(route_dom(N1, N2)) | (N1 = src(p) & N2 = sw1))
+      & (route_tc(N1, N2, N3) <-> old(route_tc(N1, N2, N3)) | (N1 = src(p) & (old(route_tc(src(p), N2, sw1)) & old(route_tc(src(p), sw0, N3)))))
+      & if (dst(p) != sw1)
+        then 
+        & (pending(P, N1, N2) <-> old(pending(P, N1, N2)) | (P = p & N1 = sw1 & N2 = sw2))
+        else
+        & (pending(P, N1, N2) <-> old(pending(P, N1, N2)))
+      else
+      & (route_dom(N1, N2) <-> old(route_dom(N1, N2)))
+      & (route_tc(N1, N2, N3) <-> old(route_tc(N1, N2, N3)))
+      & if (dst(p) != sw1)
+        then 
+        & (pending(P, N1, N2) <-> old(pending(P, N1, N2)) | (P = p & N1 = sw1 & N2 = sw2))
+        else
+        & (pending(P, N1, N2) <-> old(pending(P, N1, N2)))
+
+safety [prop] route_tc(N, X, X) & (route_tc(N, X, Y) & route_tc(N, Y, Z) -> route_tc(N, X, Z)) & (route_tc(N, X, Y) & route_tc(N, Y, X) -> X = Y) & (route_tc(N, X, Y) & route_tc(N, X, Z) -> (route_tc(N, Y, Z) | route_tc(N, Z, Y)))
+
+invariant [help_2_ic3po_required]	(forall P0, N2, N1, N0 . (((src(P0) = N0) & pending(P0, N2, N1)) -> ((N0 = N1) | (N0 = N2) | (N1 = N2) | route_dom(N0, N2))))
+invariant [help_3_ic3po_required]	(forall N2, N1, N0 . (route_tc(N0, N2, N1) -> (route_dom(N0, N2) | (N1 = N2))))
+invariant [help_5_ic3po_required]	(forall N0 . !route_dom(N0, N0))
+invariant [help_6_ic3po_required]	(forall N2, N1, N0 . (route_tc(N0, N2, N1) -> ((N1 = N2) | (N0 = N2) | route_dom(N0, N1) | (N0 = N1))))

@@ -1,0 +1,48 @@
+sort node
+sort epoch
+
+immutable relation le(epoch, epoch) @no_minimize
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+immutable constant zero:epoch
+axiom le(zero, X)
+
+mutable function ep(node): epoch
+mutable relation held(node)
+mutable relation transfer(epoch, node)
+mutable relation locked(epoch, node)
+
+immutable constant first:node
+immutable constant firste:epoch
+axiom firste != zero
+
+init (held(X) = (X=first))
+init (N = first -> ep(N) = firste)
+init (N != first -> ep(N) = zero)
+init !transfer(E, N)
+init !locked(E, N)
+
+transition grant(n1:node, n2:node, e:epoch)
+    modifies transfer, held
+    & (old(held(n1)))
+    & (!le(e, old(ep(n1))))
+    & (transfer(E, N) <-> old(transfer(E, N)) | (E = e & N = n2))
+    & (held(N) <-> old(held(N)) & (N != n1))
+
+transition accept(n:node, e:epoch)
+    modifies held, ep, locked
+    & old(transfer(e,n))
+    & if !le(e, old(ep(n)))
+      then 
+      & (held(N) <-> old(held(N)) | (N = n))
+      & (N != n -> ep(N) = old(ep(N)))
+      & (N = n -> ep(N) = e)
+      & (locked(E, N) <-> old(locked(E, N)) | (E = e & N = n))
+      else
+      & (held(N) <-> old(held(N)))
+      & (ep(N) = old(ep(N)))
+      & (locked(E, N) <-> old(locked(E, N)))
+
+safety [prop] held(N1) -> le(ep(N2), ep(N1))

@@ -1,0 +1,79 @@
+#lang ivy1.7
+
+#
+# This is an elaborated verion of client_server_db_ae.ivy from the code examples of:
+#
+# Bounded Quantifier Instantiation for Checking Inductive Invariants
+# Yotam M. Y. Feldman, Oded Padon, Neil Immerman, Mooly Sagiv, and Sharon Shoham. TACAS 2017, LMCS 2019.
+#
+#
+
+type node
+type request
+type response
+type db_request_id
+
+relation match(R:request, P:response)
+
+relation request_sent(N:node, R:request)
+relation response_sent(N:node, P:response)
+relation response_received(N:node, P:response)
+
+relation db_request_sent(D:db_request_id, R:request)
+relation db_response_sent(D:db_request_id, P:response)
+
+relation t(D:db_request_id, N:node)
+
+after init  {
+	request_sent(N,R) := false;
+	response_sent(N,P) := false;
+	response_received(N,P) := false;
+	db_request_sent(I, R) := false;
+	db_response_sent(I,P) := false;
+	t(I,N) := false;
+}
+
+action new_request(n:node, r:request) = {
+  request_sent(n,r) := true;
+}
+
+action server_process_request(n:node, r:request, i:db_request_id) = {
+  require request_sent(n,r);
+  require forall N. ~t(i,N);
+  
+  t(i, n) := true;
+  db_request_sent(i, r) := true;
+}
+
+action db_process_request(i:db_request_id, r:request, p:response) = {
+  require db_request_sent(i,r);
+  require match(r,p);
+  
+  db_response_sent(i, p) := true;
+}
+
+action server_process_db_response(n:node, i:db_request_id, p:response) = {
+  require db_response_sent(i,p);
+  require t(i,n);
+  
+  response_sent(n, p) := true;
+}
+
+action receive_response(n:node, p:response) = {
+  require response_sent(n,p);
+  
+  response_received(n, p) := true;
+}
+
+export new_request
+export server_process_request
+export db_process_request
+export server_process_db_response
+export receive_response
+
+invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
+
+invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)
+invariant [manual_2] forall I,R. db_request_sent(I,R) -> exists N. t(I,N) & request_sent(N,R)
+invariant [manual_3] forall I,P. db_response_sent(I,P) -> exists R. db_request_sent(I,R) & match(R,P)
+invariant [manual_4] t(I,N1) & t(I,N2) -> N1 = N2

@@ -1,0 +1,29 @@
+sort node
+
+mutable relation message(node, node)
+mutable relation has_lock(node)
+
+immutable constant start_node: node
+
+init !(message(S, D))
+init has_lock(start_node)
+init N != start_node -> !has_lock(N)
+
+transition send(src: node, dst: node)
+  modifies message, has_lock
+    & old(has_lock(src))
+    & (forall S,D. message(S,D) <-> ((S=src & D=dst) | old(message(S,D))))
+    & (forall S. has_lock(S) <-> ((S != src) & old(has_lock(S))))
+
+transition recv(src: node, dst: node)
+  modifies message, has_lock
+    & old(message(src, dst))
+    & (forall S,D. message(S,D) <-> (!(S=src & D=dst) & old(message(S,D))))
+    & (forall S. has_lock(S) <-> ((S = src) | old(has_lock(S))))
+
+safety X != Y -> !(has_lock(X) & has_lock(Y))
+
+invariant !(has_lock(X) & message(Y,Z))
+invariant !(message(X,Y)) | !(message(Z,W)) | X=Z
+invariant !(message(X,Y)) | !(message(Z,W)) | Y=W
+

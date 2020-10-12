@@ -1,0 +1,44 @@
+#lang ivy1.7
+
+# This example has a forall-exists invariant, but actually it also has a universal invariant
+
+type node
+
+relation table(N0:node, N1:node, N2:node)
+relation pending(N0:node, N1:node, N2:node, N3:node)
+
+after init  {
+	table(T, N1, N2) := (N1 = N2);
+	pending(PS, PD, S, D) := false;
+}
+
+action new_packet(ps: node, pd: node) = {
+  pending(ps, pd, ps, ps) := true;
+}
+
+action forward(ps: node, pd: node, sw0: node, sw1: node, nondet: node) = {
+  require pending(ps, pd, sw0, sw1);
+
+  pending(PS,PD,S,D) := pending(PS,PD,S,D) & (PS = nondet);
+  pending(ps,pd,sw1,D) := true;
+  
+  if (ps ~= sw1) & (forall W. W ~= sw1 -> ~table(ps, sw1, W)) {
+    table(ps,N1,N2) := table(ps,N1,N2) | (table(ps, N1, sw1) & table(ps, sw0, N2));
+  }
+}
+
+export new_packet
+export forward
+
+invariant [safety] (forall T, X. table(T,X,X)) & (forall T, X, Y, Z. table(T,X,Y) & table(T,Y,Z) -> table(T,X,Z)) & (forall T, X, Y. table(T,X,Y) & table(T,Y,X) -> X = Y) & (forall T, X, Y, Z. table(T,X,Y) & table(T,X,Z) -> table(T,Y,Z) | table(T,Z,Y))
+
+#invariant [safety_1] table(T,X,X)
+#invariant [safety_2] table(T,X,Y) & table(T,Y,Z) -> table(T,X,Z)
+#invariant [safety_3] table(T,X,Y) & table(T,Y,X) -> X = Y
+#invariant [safety_4] table(T,X,Y) & table(T,X,Z) -> table(T,Y,Z) | table(T,Z,Y)
+
+invariant [manual_1] pending(PS,PD,S,D) & PS ~= S -> exists W. table(PS,S,W) & W ~= S
+invariant [manual_2] table(T,X,Y) & T ~= Y & X ~= Y -> exists W. table(T,Y,W) & W ~= Y
+invariant [manual_3] pending(PS,PD,S,D) & PS ~= S -> table(PS,S,PS)
+invariant [manual_4] table(T,X,Y) & T ~= Y & X ~= Y -> table(T,Y,T)
+

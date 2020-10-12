@@ -1,0 +1,71 @@
+sort node
+
+mutable relation vote_yes(node)
+mutable relation vote_no(node)
+mutable relation alive(node)
+mutable relation go_commit(node)
+mutable relation go_abort(node)
+mutable relation decide_commit(node)
+mutable relation decide_abort(node)
+mutable relation abort_flag
+
+init !vote_yes(N)
+init !vote_no(N)
+init alive(N)
+init !go_commit(N)
+init !go_abort(N)
+init !decide_commit(N)
+init !decide_abort(N)
+init !abort_flag
+
+transition vote1(n: node)
+  modifies vote_yes
+  & (old(alive(n)))
+  & (!old(vote_no(n)))
+  & (!old(decide_commit(n)))
+  & (!old(decide_abort(n)))
+  & (vote_yes(N) <-> old(vote_yes(N)) | (N = n))
+
+transition vote2(n: node)
+  modifies vote_no, abort_flag, decide_abort
+  & (old(alive(n)))
+  & (!old(vote_yes(n)))
+  & (!old(decide_commit(n)))
+  & (!old(decide_abort(n)))
+  & (vote_no(N) <-> old(vote_no(N)) | (N = n))
+  & (abort_flag <-> true)
+  & (decide_abort(N) <-> old(decide_abort(N)) | (N = n))
+
+transition fail(n: node)
+  modifies alive, abort_flag
+  & (old(alive(n)))
+  & (alive(N) <-> old(alive(N)) & (N != n))
+  & (abort_flag <-> true)
+
+transition go1()
+  modifies go_commit
+  & (!old(go_commit(N)))
+  & (!old(go_abort(N)))
+  & (old(vote_yes(N)))
+  & (go_commit(N) <-> true)
+
+transition go2()
+  modifies go_abort
+  & (!old(go_commit(N)))
+  & (!old(go_abort(N)))
+  & (exists N. old(vote_no(N)) | !old(alive(N)))
+  & (go_abort(N) <-> true)
+
+transition commit(n: node)
+  modifies decide_commit
+  & (old(alive(n)))
+  & (old(go_commit(n)))
+  & (decide_commit(N) <-> old(decide_commit(N)) | (N = n))
+
+transition abort(n: node)
+  modifies decide_abort
+  & (old(alive(n)))
+  & (old(go_abort(n)))
+  & (decide_abort(N) <-> old(decide_abort(N)) | (N = n))
+
+safety [prop] (decide_commit(N) -> !decide_abort(N2)) & (decide_commit(N) -> vote_yes(N2)) & (decide_abort(N) -> abort_flag)

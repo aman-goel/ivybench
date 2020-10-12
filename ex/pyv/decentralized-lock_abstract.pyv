@@ -1,0 +1,38 @@
+sort node
+sort time
+
+immutable relation le(time, time)
+
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+
+mutable relation has_lock(node)
+mutable relation msg(node, node, time)
+mutable relation gt(time, node)
+
+immutable constant first: node
+immutable constant zero: time
+axiom le(zero, X)
+
+init (has_lock(X) = (X = first))
+init !msg(X,Y,T)
+init (gt(T, X) = (T != zero))
+
+transition take_lock(x: node, y: node, t: time)
+  modifies gt, has_lock
+    & old(msg(x, y, t))
+    & old(gt(t, y))
+    & (has_lock(Y) <-> (old(has_lock(Y)) | (Y = y)))
+    & (Y != y -> (gt(T, Y) <-> old(gt(T, Y))))
+    & (Y = y -> (gt(T, Y) <-> !le(T, t)))
+
+transition release_lock(x: node, y : node, t: time)
+  modifies msg, has_lock
+    & old(has_lock(x))
+    & old(gt(t, x))
+    & (has_lock(X) <-> (old(has_lock(X)) & (X != x)))
+    & (msg(X, Y, T) <-> (old(msg(X, Y, T)) | (X=x & Y=y & T=t)))
+
+safety !(X != Y & has_lock(X) & has_lock(Y))

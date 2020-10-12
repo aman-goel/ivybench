@@ -1,0 +1,78 @@
+(declare-sort node 0)
+(declare-sort value 0)
+(declare-sort pcstate 0)
+
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .value ((S value)) value (! S :sort 2))
+(define-fun .pcstate ((S pcstate)) pcstate (! S :sort 4))
+
+(declare-fun __y (node) value)
+(declare-fun __x (node value) Bool)
+(declare-fun __pc (node) pcstate)
+
+(declare-fun y (node) value)
+(declare-fun x (node value) Bool)
+(declare-fun pc (node) pcstate)
+
+(define-fun .y ((V0 node)) value (! (__y V0) :next y))
+(define-fun .x ((V0 node) (V1 value)) Bool (! (__x V0 V1) :next x))
+(define-fun .pc ((V0 node)) pcstate (! (__pc V0) :next pc))
+
+(declare-fun a1 () pcstate)
+(declare-fun done () pcstate)
+(declare-fun b () pcstate)
+(declare-fun zero () value)
+(declare-fun one () value)
+(declare-fun ring.btw (node node node) Bool)
+(declare-fun a2 () pcstate)
+
+(define-fun .a1 () pcstate (! a1 :global true))
+(define-fun .done () pcstate (! done :global true))
+(define-fun .b () pcstate (! b :global true))
+(define-fun .zero () value (! zero :global true))
+(define-fun .one () value (! one :global true))
+(define-fun .ring.btw ((V0 node) (V1 node) (V2 node)) Bool (! (ring.btw V0 V1 V2) :global true))
+(define-fun .a2 () pcstate (! a2 :global true))
+
+(define-fun .prop () Bool (! 
+ (let (($v (=> (forall ((S node)) (= (__pc S) done)) (exists ((I node)) (= (__y I) one)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((W node) (X node) (Y node) (Z node)) (=> (and (ring.btw W X Y) (ring.btw W Y Z)) (ring.btw W X Z))) (forall ((W node) (X node) (Y node)) (=> (ring.btw W X Y) (not (ring.btw W Y X)))) (forall ((W node) (X node) (Y node)) (or (ring.btw W X Y) (ring.btw W Y X) (= W X) (= W Y) (= X Y))) (forall ((X node) (Y node) (Z node)) (=> (ring.btw X Y Z) (ring.btw Y Z X))) (not (= zero one)) (not (= a1 a2)) (not (= a1 b)) (not (= a1 done)) (not (= a2 b)) (not (= a2 done)) (not (= b done)))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 value)) (= (__x V0 V1) (= V1 zero))) (forall ((V0 node)) (= (__y V0) zero)) (forall ((V0 node)) (= (__pc V0) a1)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:step_a1 () Bool (! 
+ (let (($v (exists ((V__fml:self node)) (and (forall ((V0 node) (V1 value)) (= (x V0 V1) (ite (= V0 V__fml:self) (or (= V1 zero) (= V1 one)) (__x V0 V1)))) (forall ((V0 node)) (= (pc V0) (ite (= V0 V__fml:self) a2 (__pc V0)))) (= (__pc V__fml:self) a1)))
+ ))
+ (and $v))
+ :action ext:step_a1))
+
+(define-fun .action_ext:step_a2 () Bool (! 
+ (let (($v (exists ((V__fml:self node)) (and (forall ((V0 node) (V1 value)) (= (x V0 V1) (ite (= V0 V__fml:self) (= V1 one) (__x V0 V1)))) (forall ((V0 node)) (= (pc V0) (ite (= V0 V__fml:self) b (__pc V0)))) (= (__pc V__fml:self) a2)))
+ ))
+ (and $v))
+ :action ext:step_a2))
+
+(define-fun .action_ring.get_prev () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node)) (and (not (= V__fml:y V__fml:x)) (forall ((Z node)) (=> (and (not (= Z V__fml:y)) (not (= Z V__fml:x))) (ring.btw V__fml:y V__fml:x Z)))))
+ ))
+ (and $v))
+ :action ring.get_prev))
+
+(define-fun .action_ext:step_b () Bool (! 
+ (let (($v (exists ((V__fml:self node) (V__fml:v value) (V__fml:x node) (V__new_fml:y node) (V__new_loc:0 node)) (and (= V__new_fml:y V__fml:self) (= V__new_loc:0 V__fml:x) (forall ((V0 node)) (= (y V0) (ite (= V0 V__fml:self) V__fml:v (__y V0)))) (forall ((V0 node)) (= (pc V0) (ite (= V0 V__fml:self) done (__pc V0)))) (= (__pc V__fml:self) b) (not (= V__new_fml:y V__fml:x)) (forall ((Z node)) (=> (and (not (= Z V__new_fml:y)) (not (= Z V__fml:x))) (ring.btw V__new_fml:y V__fml:x Z))) (__x V__new_loc:0 V__fml:v)))
+ ))
+ (and $v))
+ :action ext:step_b))
+

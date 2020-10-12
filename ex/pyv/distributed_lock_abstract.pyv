@@ -1,0 +1,47 @@
+sort node
+sort epoch
+
+immutable relation le(epoch, epoch)
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+immutable constant zero:epoch
+axiom le(zero, X)
+
+mutable relation gt(epoch, node)
+mutable relation held(node)
+mutable relation transfer_msg(epoch, node)
+mutable relation locked(epoch, node)
+
+immutable constant first:node
+immutable constant firste:epoch
+axiom firste != zero
+
+init (held(X) = (X=first))
+init (gt(E, X) = (E != zero))
+init !transfer_msg(E, N)
+init !locked(E, N)
+
+transition grant(n1:node, n2:node, e:epoch)
+    modifies transfer_msg, held
+    & (old(held(n1)))
+    & old(gt(e, n1))
+    & (held(N) <-> old(held(N)) & (N != n1))
+    & (transfer_msg(E, N) <-> old(transfer_msg(E, N)) | (E = e & N = n2))
+
+transition accept(n:node, e:epoch)
+    modifies held, gt, locked
+    & old(transfer_msg(e,n))
+    & if old(gt(e, n))
+      then 
+      & (held(N) <-> old(held(N)) | (N = n))
+      & (N != n -> gt(E, N) = old(gt(E, N)))
+      & (N = n -> gt(E, N) = !le(E, e))
+      & (locked(E, N) <-> old(locked(E, N)) | (E = e & N = n))
+      else
+      & (held(N) <-> old(held(N)))
+      & (gt(E, N) = old(gt(E, N)))
+      & (locked(E, N) <-> old(locked(E, N)))
+
+safety [prop] locked(E, N1) & locked(E, N2) -> N1 = N2

@@ -1,0 +1,140 @@
+sort node
+
+immutable relation btw(node, node, node) @no_minimize
+axiom btw(W, X, Y) & btw(W, Y, Z) -> btw(W, X, Z)  # transitive
+axiom btw(W, X, Y) -> !btw(W, Y, X)  # acyclic
+axiom btw(W, X, Y) | btw(W, Y, X) | W=X | X=Y  # total
+axiom (btw(X, Y, Z) & X != Z) -> btw(Y, Z, X)  # cyclic permutations
+
+mutable relation a(node)                # active set
+mutable relation s1(node, node)         # first successor
+mutable relation in_s1(node)
+mutable relation s2(node, node)         # second successor
+mutable relation in_s2(node)
+mutable relation p(node, node)          # predecessor
+
+immutable constant org : node
+immutable constant other : node
+axiom other != org
+
+mutable relation reach(node)
+mutable relation error(node)
+
+init (a(X) = (X = org | X = other))
+init (s1(X, Y) = ((X = org & Y = other) | (X = other & Y = org)))
+init (in_s1(X) = (X = org | X = other))
+init !s2(X, Y)
+init !in_s2(X)
+init (p(X, Y) = ((X = org & Y = other) | (X = other & Y = org)))
+init (reach(X) = (X = org))
+init !error(X)
+
+transition join(x : node, y : node)
+    modifies a, s1, in_s1, s2, in_s2, p
+    & (!old(a(x)))
+    & (old(a(y)))
+    & (!btw(x, org, y))
+    & (a(X) <-> old(a(X)) | (X = x))
+    & (s1(x, Y) <-> (y = Y))
+    & (forall X, Y. X != x -> (s1(X, Y) <-> old(s1(X, Y))))
+    & (in_s1(X) <-> old(in_s1(X)) | (X = x))
+    & (s2(X, Y) <-> old(s2(X, Y) & (X != x)))
+    & (in_s2(X) <-> old(in_s2(X)) & (X != x))
+    & (p(X, Y) <-> old(p(X, Y) & (X != x)))
+
+transition stabilize(x : node, y : node, z : node)
+    modifies s1, in_s1, s2, in_s2
+    & (old(a(x)))
+    & (old(s1(x, y)))
+    & (old(a(y)))
+    & (old(p(y, z)))
+    & (btw(x, z, y))
+    & (s1(x, Z) <-> (z = Z))
+    & (forall X, Z. X != x -> (s1(X, Z) <-> old(s1(X, Z))))
+    & (in_s1(X) <-> old(in_s1(X)) | (X = x))
+    & (s2(x, Y) <-> (y = Y))
+    & (forall X, Y. X != x -> (s2(X, Y) <-> old(s2(X, Y))))
+    & (in_s2(X) <-> old(in_s2(X)) | (X = x))
+
+transition notify(x : node, y : node, z : node)
+    modifies p
+    & (old(a(x)))
+    & (old(s1(x, y)))
+    & (old(a(y)))
+    & (old(p(y, z)) | !old(p(y, X)))
+    & (btw(z, x, y))
+    & (p(y, X) <-> (X = x))
+    & (forall Y, X. Y != y -> (p(Y, X) <-> old(p(Y, X))))
+
+transition inherit(x : node, y : node, z : node)
+    modifies s2, in_s2
+    & (old(a(x)))
+    & (old(s1(x, y)))
+    & (old(a(y)))
+    & (old(s1(y, z)))
+    & (s2(x, Z) <-> (Z = z))
+    & (forall X, Z. X != x -> (s2(X, Z) <-> old(s2(X, Z))))
+    & (in_s2(X) <-> old(in_s2(X)) | (X = x))
+
+transition remove(x : node, y : node, z : node)
+    modifies s1, in_s1, s2, in_s2
+    & (old(a(x)))
+    & (old(s1(x, y)))
+    & (!old(a(y)))
+    & (old(s2(x, z)))
+    & (s1(x, Z) <-> (Z = z))
+    & (forall X, Z. X != x -> (s1(X, Z) <-> old(s1(X, Z))))
+    & (in_s1(X) <-> old(in_s1(X)) | (X = x))
+    & (s2(X, Y) <-> old(s2(X, Y) & (X != x)))
+    & (in_s2(X) <-> old(in_s2(X)) & (X != x))
+
+transition fail(x : node)
+    modifies a, p, s1, in_s1, s2, in_s2
+    & (old(a(x)))
+    & (x != org)
+    & (old(s1(Y, x)) -> old(in_s2(Y)))
+    & ((old(s1(Y, x)) & old(s2(Y, Z))) -> old(a(Z)))
+    & ((old(s1(X, Y)) & old(s2(X, x))) -> (Y != x & old(a(Y))))
+    & (a(X) <-> old(a(X)) & (X != x))
+    & (p(X, Y) <-> old(p(X, Y) & (X != x)))
+    & (s1(X, Y) <-> old(s1(X, Y) & (X != x)))
+    & (in_s1(X) <-> old(in_s1(X)) & (X != x))
+    & (s2(X, Y) <-> old(s2(X, Y) & (X != x)))
+    & (in_s2(X) <-> old(in_s2(X)) & (X != x))
+
+transition reach_org(x : node, y : node, z : node)
+    modifies reach
+    & ((old(s1(x, y)) & old(a(y)) & old(reach(y))) | (old(s1(x, y)) & !old(a(y)) & old(s2(x, z)) & old(a(z)) & old(reach(z))))
+    & (reach(X) <-> old(reach(X)) | (X = x))
+
+transition remove_org(x : node, y : node, z : node)
+    modifies reach
+    & (x != org)
+    & (old(s1(x, y)))
+    & (!old(a(y)) | !old(reach(y)))
+    & (!old(a(y)) -> (!old(s2(x, Z)) | old(s2(x, z))))
+    & ((!old(a(y)) & old(s2(x, z))) -> (!old(a(z)) | !old(reach(z))))
+    & (reach(X) <-> old(reach(X)) & (X != x))
+
+transition test(x : node)
+    modifies error
+    & ((old(s1(X, Y)) & old(a(Y)) & old(reach(Y))) -> old(reach(X)))
+    & ((old(s1(X, Y)) & !old(a(Y)) & old(s2(X, Z)) & old(a(Z)) & old(reach(Z))) -> old(reach(X)))
+    & ((btw(x, Y, org) & old(a(Y))) -> old(reach(Y)))
+    & (old(a(x)))
+    & (!old(reach(x)))
+    & (old(in_s1(x)) -> exists Y. old(s1(x, Y)))
+    & (old(in_s2(x)) -> exists Y. old(s2(x, Y)))
+    & (error(X) <-> old(error(X)) | (X = x))
+
+safety [prop] !error(N)
+
+invariant [help_7_ic3po_required]	(forall N0 . (a(N0) -> in_s1(N0)))
+invariant [help_10_ic3po_required]	(forall N0 . ((org = N0) -> reach(N0)))
+invariant [help_11_ic3po_required]	(forall N1, N0, N2 . (s1(N2, N1) -> ((org = N0) -> !btw(N2, N0, N1))))
+invariant [help_14_ic3po_required]	(forall N1, N0, N2 . ((s2(N2, N2) & s1(N2, N1) & (org = N0)) -> ((N0 = N1) | (N0 = N2) | (N1 = N2))))
+invariant [help_15_ic3po_required]	(forall N2, N1, N0 . ((s1(N0, N2) & s1(N0, N1)) -> (N1 = N2)))
+invariant [help_22_ic3po_required]	(forall N1, N0, N3, N2 . (((org = N0) & in_s2(N1) & btw(N1, N0, N3) & s1(N1, N2) & s2(N1, N3)) -> (N0 = N2)))
+invariant [help_28_ic3po_required]	(forall N1, N2, N0 . ((s1(N0, N1) & s2(N0, N2)) -> (a(N2) | a(N1))))
+invariant [help_31_ic3po_required]	(forall N0 . ((org = N0) -> a(N0)))
+invariant [help_35_ic3po_required]	(forall N1, N0, N2 . (((org = N2) & s1(N0, N1)) -> ((N0 = N2) | a(N1) | in_s2(N0))))

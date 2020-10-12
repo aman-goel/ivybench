@@ -1,0 +1,55 @@
+sort node
+sort value
+sort pcstate
+
+immutable relation btw(node, node, node)
+
+axiom btw(W,X,Y) & btw(W,Y,Z) -> btw(W,X,Z)
+axiom btw(W,X,Y) -> !btw(W,Y,X)
+axiom btw(W,X,Y) | btw(W,Y,X) | W=X | W=Y | X=Y
+axiom btw(X,Y,Z) -> btw(Y,Z,X)
+
+mutable relation x(node, value)
+mutable function y(node) : value
+
+immutable constant zero: value
+immutable constant one: value
+axiom zero != one
+
+mutable function pc(node) : pcstate
+immutable constant a1: pcstate
+immutable constant a2: pcstate
+immutable constant b: pcstate
+immutable constant done: pcstate
+axiom (a1 != a2) & (a1 != b) & (a1 != done) & (a2 != b) & (a2 != done) & (b != done)
+#axiom forall P:pcstate. (P = a1) | (P = a2) | (P = b) | (P = done)
+
+init (x(N, V) <-> (V = zero))
+init (y(N) = zero)
+init (pc(N) = a1)
+
+transition step_a1(nself:node)
+  modifies x, pc
+  & (old(pc(nself)) = a1)
+  & (x(N, V) <-> (N != nself & old(x(N, V))) | (N = nself & (V = zero | V = one)))
+  & (N != nself -> pc(N) = old(pc(N)))
+  & (N = nself -> pc(N) = a2)
+
+transition step_a2(nself:node)
+  modifies x, pc
+  & (old(pc(nself)) = a2)
+  & (x(N, V) <-> (N != nself & old(x(N, V))) | (N = nself & (V = one)))
+  & (N != nself -> pc(N) = old(pc(N)))
+  & (N = nself -> pc(N) = b)
+
+transition step_b(nself:node, v:value, prev: node)
+  modifies y, pc
+  & (nself != prev & ((Z != nself & Z != prev) -> btw(nself,prev,Z)))
+  & (old(pc(nself)) = b)
+  & (old(x(prev, v)))
+  & (N != nself -> y(N) = old(y(N)))
+  & (N = nself -> y(N) = v)
+  & (N != nself -> pc(N) = old(pc(N)))
+  & (N = nself -> pc(N) = done)
+
+safety [prop] (forall S:node. pc(S) = done) -> (exists I:node. y(I) = one)

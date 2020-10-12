@@ -1,0 +1,39 @@
+sort resource_manager
+
+mutable relation working(resource_manager)
+mutable relation prepared(resource_manager)
+mutable relation committed(resource_manager)
+mutable relation aborted(resource_manager)
+
+init working(R)
+init !prepared(R)
+init !committed(R)
+init !aborted(R)
+
+transition prepare(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(working(rm)))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) | (RM = rm))
+  & (committed(RM) <-> old(committed(RM)) & (RM != rm))
+  & (aborted(RM) <-> old(aborted(RM)) & (RM != rm))
+
+transition decide_commit(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(prepared(rm)))
+  & (forall R. (old(prepared(R)) | old(committed(R))))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) & (RM != rm))
+  & (committed(RM) <-> old(committed(RM)) | (RM = rm))
+  & (aborted(RM) <-> old(aborted(RM)) & (RM != rm))
+
+transition decide_abort(rm:resource_manager)
+  modifies working, prepared, committed, aborted
+  & (old(working(rm)) | old(prepared(rm)))
+  & (forall R. !old(committed(R)))
+  & (working(RM) <-> old(working(RM)) & (RM != rm))
+  & (prepared(RM) <-> old(prepared(RM)) & (RM != rm))
+  & (committed(RM) <-> old(committed(RM)) & (RM != rm))
+  & (aborted(RM) <-> old(aborted(RM)) | (RM = rm))
+
+safety [prop] (forall R1, R2. !(aborted(R1) & committed(R2)) )

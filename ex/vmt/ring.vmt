@@ -1,0 +1,53 @@
+(declare-sort node 0)
+
+(define-fun .node ((S node)) node (! S :sort 3))
+
+(declare-fun __leader (node) Bool)
+(declare-fun __pending (node node) Bool)
+
+(declare-fun leader (node) Bool)
+(declare-fun pending (node node) Bool)
+
+(define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
+(define-fun .pending ((V0 node) (V1 node)) Bool (! (__pending V0 V1) :next pending))
+
+(declare-fun le (node node) Bool)
+(declare-fun btw (node node node) Bool)
+
+(define-fun .le ((V0 node) (V1 node)) Bool (! (le V0 V1) :global true))
+(define-fun .btw ((V0 node) (V1 node) (V2 node)) Bool (! (btw V0 V1 V2) :global true))
+
+(declare-fun __ts0_b () Bool)
+(declare-fun __ts0__ts0_a_a () Bool)
+(declare-fun __m_pending (node node) Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((L node) (N node)) (=> (__leader L) (le N L)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X node)) (le X X)) (forall ((X node) (Y node) (Z node)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X node) (Y node)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X node) (Y node)) (or (le X Y) (le Y X))) (forall ((W node) (X node) (Y node) (Z node)) (=> (and (btw W X Y) (btw W Y Z)) (btw W X Z))) (forall ((W node) (X node) (Y node)) (=> (btw W X Y) (not (btw W Y X)))) (forall ((W node) (X node) (Y node)) (or (btw W X Y) (btw W Y X) (= W X) (= W Y) (= X Y))) (forall ((X node) (Y node) (Z node)) (=> (btw X Y Z) (btw Y Z X))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__leader V0) false)) (forall ((V0 node) (V1 node)) (= (__pending V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:send () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:next node)) (and (forall ((V0 node) (V1 node)) (= (pending V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:next)) true (__pending V0 V1)))) (not (= V__fml:n V__fml:next)) (forall ((Z node)) (=> (and (not (= Z V__fml:n)) (not (= Z V__fml:next))) (btw V__fml:n V__fml:next Z)))))
+ ))
+ (and $v))
+ :action ext:send))
+
+(define-fun .action_ext:recv () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:next node) (V__fml:sender node)) (and (forall ((V0 node)) (= (leader V0) (ite __ts0_b (ite (= V0 V__fml:n) true (__leader V0)) (__leader V0)))) (= __ts0__ts0_a_a (le V__fml:n V__fml:sender)) (forall ((V0 node) (V1 node)) (= (pending V0 V1) (ite __ts0_b (__m_pending V0 V1) (ite __ts0__ts0_a_a (ite (and (= V0 V__fml:sender) (= V1 V__fml:next)) true (__m_pending V0 V1)) (__m_pending V0 V1))))) (= __ts0_b (= V__fml:sender V__fml:n)) (not (= V__fml:n V__fml:next)) (forall ((Z node)) (=> (and (not (= Z V__fml:n)) (not (= Z V__fml:next))) (btw V__fml:n V__fml:next Z))) (__pending V__fml:sender V__fml:n) (forall ((X0 node) (X1 node)) (or (not (__m_pending X0 X1)) (__pending X0 X1) (= X0 V__fml:sender))) (forall ((X0 node) (X1 node)) (or (not (__m_pending X0 X1)) (__pending X0 X1) (= X1 V__fml:n))) (forall ((X0 node) (X1 node)) (or (__m_pending X0 X1) (not (__pending X0 X1)) (= X0 V__fml:sender))) (forall ((X0 node) (X1 node)) (or (__m_pending X0 X1) (not (__pending X0 X1)) (= X1 V__fml:n)))))
+ ))
+ (and $v))
+ :action ext:recv))
+

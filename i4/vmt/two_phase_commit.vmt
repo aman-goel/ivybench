@@ -1,0 +1,85 @@
+(declare-sort node 0)
+
+(define-fun .node ((S node)) node (! S :sort 4))
+
+(declare-fun __vote_yes (node) Bool)
+(declare-fun __go_abort (node) Bool)
+(declare-fun __abort_flag () Bool)
+(declare-fun __go_commit (node) Bool)
+(declare-fun __decide_abort (node) Bool)
+(declare-fun __decide_commit (node) Bool)
+(declare-fun __alive (node) Bool)
+(declare-fun __vote_no (node) Bool)
+
+(declare-fun vote_yes (node) Bool)
+(declare-fun go_abort (node) Bool)
+(declare-fun abort_flag () Bool)
+(declare-fun go_commit (node) Bool)
+(declare-fun decide_abort (node) Bool)
+(declare-fun decide_commit (node) Bool)
+(declare-fun alive (node) Bool)
+(declare-fun vote_no (node) Bool)
+
+(define-fun .vote_yes ((V0 node)) Bool (! (__vote_yes V0) :next vote_yes))
+(define-fun .go_abort ((V0 node)) Bool (! (__go_abort V0) :next go_abort))
+(define-fun .abort_flag () Bool (! __abort_flag :next abort_flag))
+(define-fun .go_commit ((V0 node)) Bool (! (__go_commit V0) :next go_commit))
+(define-fun .decide_abort ((V0 node)) Bool (! (__decide_abort V0) :next decide_abort))
+(define-fun .decide_commit ((V0 node)) Bool (! (__decide_commit V0) :next decide_commit))
+(define-fun .alive ((V0 node)) Bool (! (__alive V0) :next alive))
+(define-fun .vote_no ((V0 node)) Bool (! (__vote_no V0) :next vote_no))
+
+(define-fun .prop () Bool (! 
+ (let (($v (and (forall ((N node) (N2 node)) (=> (__decide_commit N) (not (__decide_abort N2)))) (forall ((N node) (N2 node)) (=> (__decide_commit N) (__vote_yes N2))) (forall ((N node)) (=> (__decide_abort N) __abort_flag)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__vote_yes V0) false)) (forall ((V0 node)) (= (__vote_no V0) false)) (forall ((V0 node)) (= (__alive V0) true)) (forall ((V0 node)) (= (__go_commit V0) false)) (forall ((V0 node)) (= (__go_abort V0) false)) (forall ((V0 node)) (= (__decide_commit V0) false)) (forall ((V0 node)) (= (__decide_abort V0) false)) (= __abort_flag false))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:go1 () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (go_commit V0) true)) (forall ((N node)) (not (__go_commit N))) (forall ((N node)) (not (__go_abort N))) (forall ((N node)) (__vote_yes N)))
+ ))
+ (and $v))
+ :action ext:go1))
+
+(define-fun .action_ext:go2 () Bool (! 
+ (let (($v (exists ((V__sk__N node)) (and (forall ((V0 node)) (= (go_abort V0) true)) (forall ((N node)) (not (__go_commit N))) (forall ((N node)) (not (__go_abort N))) (or (__vote_no V__sk__N) (not (__alive V__sk__N)))))
+ ))
+ (and $v))
+ :action ext:go2))
+
+(define-fun .action_ext:fail () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (alive V0) (ite (= V0 V__fml:n) false (__alive V0)))) (= abort_flag true) (__alive V__fml:n)))
+ ))
+ (and $v))
+ :action ext:fail))
+
+(define-fun .action_ext:abort () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (decide_abort V0) (ite (= V0 V__fml:n) true (__decide_abort V0)))) (__alive V__fml:n) (__go_abort V__fml:n)))
+ ))
+ (and $v))
+ :action ext:abort))
+
+(define-fun .action_ext:commit () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (decide_commit V0) (ite (= V0 V__fml:n) true (__decide_commit V0)))) (__alive V__fml:n) (__go_commit V__fml:n)))
+ ))
+ (and $v))
+ :action ext:commit))
+
+(define-fun .action_ext:vote1 () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (vote_yes V0) (ite (= V0 V__fml:n) true (__vote_yes V0)))) (__alive V__fml:n) (not (__vote_no V__fml:n)) (not (__decide_commit V__fml:n)) (not (__decide_abort V__fml:n))))
+ ))
+ (and $v))
+ :action ext:vote1))
+
+(define-fun .action_ext:vote2 () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (vote_no V0) (ite (= V0 V__fml:n) true (__vote_no V0)))) (= abort_flag true) (forall ((V0 node)) (= (decide_abort V0) (ite (= V0 V__fml:n) true (__decide_abort V0)))) (__alive V__fml:n) (not (__vote_yes V__fml:n)) (not (__decide_commit V__fml:n)) (not (__decide_abort V__fml:n))))
+ ))
+ (and $v))
+ :action ext:vote2))
+

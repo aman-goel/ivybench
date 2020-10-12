@@ -1,0 +1,83 @@
+(declare-sort operation 0)
+(declare-sort node 0)
+(declare-sort transaction 0)
+(declare-sort key 0)
+
+(define-fun .operation ((S operation)) operation (! S :sort 2))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .transaction ((S transaction)) transaction (! S :sort 0))
+(define-fun .key ((S key)) key (! S :sort 1))
+
+(declare-fun __read_tx (transaction key) Bool)
+(declare-fun __abort_tx (transaction) Bool)
+(declare-fun __commit_tx (transaction) Bool)
+(declare-fun __depends_tx (transaction key transaction) Bool)
+(declare-fun __write_tx (transaction key) Bool)
+(declare-fun __precommit_tx (transaction node) Bool)
+
+(declare-fun read_tx (transaction key) Bool)
+(declare-fun abort_tx (transaction) Bool)
+(declare-fun commit_tx (transaction) Bool)
+(declare-fun depends_tx (transaction key transaction) Bool)
+(declare-fun write_tx (transaction key) Bool)
+(declare-fun precommit_tx (transaction node) Bool)
+
+(define-fun .read_tx ((V0 transaction) (V1 key)) Bool (! (__read_tx V0 V1) :next read_tx))
+(define-fun .abort_tx ((V0 transaction)) Bool (! (__abort_tx V0) :next abort_tx))
+(define-fun .commit_tx ((V0 transaction)) Bool (! (__commit_tx V0) :next commit_tx))
+(define-fun .depends_tx ((V0 transaction) (V1 key) (V2 transaction)) Bool (! (__depends_tx V0 V1 V2) :next depends_tx))
+(define-fun .write_tx ((V0 transaction) (V1 key)) Bool (! (__write_tx V0 V1) :next write_tx))
+(define-fun .precommit_tx ((V0 transaction) (V1 node)) Bool (! (__precommit_tx V0 V1) :next precommit_tx))
+
+(declare-fun node_for_key (key node) Bool)
+(declare-fun op_node (operation node) Bool)
+(declare-fun op_reads_key (operation key) Bool)
+(declare-fun op_in_tx (transaction operation) Bool)
+(declare-fun le (transaction transaction) Bool)
+(declare-fun oporder (operation operation) Bool)
+(declare-fun op_writes_key (operation key) Bool)
+(declare-fun zero () transaction)
+
+(define-fun .node_for_key ((V0 key) (V1 node)) Bool (! (node_for_key V0 V1) :global true))
+(define-fun .op_node ((V0 operation) (V1 node)) Bool (! (op_node V0 V1) :global true))
+(define-fun .op_reads_key ((V0 operation) (V1 key)) Bool (! (op_reads_key V0 V1) :global true))
+(define-fun .op_in_tx ((V0 transaction) (V1 operation)) Bool (! (op_in_tx V0 V1) :global true))
+(define-fun .le ((V0 transaction) (V1 transaction)) Bool (! (le V0 V1) :global true))
+(define-fun .oporder ((V0 operation) (V1 operation)) Bool (! (oporder V0 V1) :global true))
+(define-fun .op_writes_key ((V0 operation) (V1 key)) Bool (! (op_writes_key V0 V1) :global true))
+(define-fun .zero () transaction (! zero :global true))
+
+(declare-fun __ts0_a_a () Bool)
+(declare-fun __ts0_a () Bool)
+(declare-fun __ts0_a_b () Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (and (forall ((K key) (T3 transaction) (TX1 transaction) (TX2 transaction)) (not (and (not (= TX1 TX2)) (__commit_tx TX1) (__commit_tx TX2) (le TX1 TX2) (__write_tx TX1 K) (__depends_tx TX2 K T3) (not (le TX1 T3))))) (forall ((N node) (O operation) (T transaction)) (=> (and (__commit_tx T) (op_in_tx T O) (op_node O N)) (__precommit_tx T N))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X transaction)) (le X X)) (forall ((X transaction) (Y transaction) (Z transaction)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X transaction) (Y transaction)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X transaction) (Y transaction)) (or (le X Y) (le Y X))) (forall ((X transaction)) (le zero X)) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_reads_key X Y1) (op_reads_key X Y2)) (= Y1 Y2))) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_writes_key X Y1) (op_writes_key X Y2)) (= Y1 Y2))) (forall ((K1 key) (K2 key) (Op operation)) (=> (and (op_reads_key Op K1) (op_writes_key Op K2)) (not (= K1 K2)))) (forall ((X operation) (Y1 node) (Y2 node)) (=> (and (op_node X Y1) (op_node X Y2)) (= Y1 Y2))) (forall ((X key) (Y1 node) (Y2 node)) (=> (and (node_for_key X Y1) (node_for_key X Y2)) (= Y1 Y2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_reads_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_writes_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((X1 transaction) (X2 transaction) (Y operation)) (=> (and (op_in_tx X1 Y) (op_in_tx X2 Y)) (= X1 X2))) (forall ((X operation)) (oporder X X)) (forall ((X operation) (Y operation) (Z operation)) (=> (and (oporder X Y) (oporder Y Z)) (oporder X Z))) (forall ((X operation) (Y operation)) (=> (and (oporder X Y) (oporder Y X)) (= X Y))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (op_in_tx T Y)) (or (oporder X Y) (oporder Y X)))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (or (oporder X Y) (oporder Y X))) (op_in_tx T Y))) (forall ((N1 node) (N2 node) (O1 operation) (O2 operation) (T transaction)) (=> (and (op_in_tx T O1) (op_in_tx T O2) (not (= O1 O2)) (op_node O1 N1) (op_node O2 N2)) (not (= N1 N2)))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 transaction) (V1 node)) (= (__precommit_tx V0 V1) (= V0 zero))) (forall ((V0 transaction)) (= (__abort_tx V0) false)) (forall ((V0 transaction)) (= (__commit_tx V0) (= V0 zero))) (forall ((V0 transaction) (V1 key) (V2 transaction)) (= (__depends_tx V0 V1 V2) (and (= V0 zero) (= V2 zero)))) (forall ((V0 transaction) (V1 key)) (= (__read_tx V0 V1) (= V0 zero))) (forall ((V0 transaction) (V1 key)) (= (__write_tx V0 V1) (= V0 zero))))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:do_progress () Bool (! 
+ (let (($v (exists ((V__fml:kr key) (V__fml:kw key) (V__fml:lcwkr transaction) (V__fml:lurkw transaction) (V__fml:luwkr transaction) (V__fml:luwkw transaction) (V__fml:n node) (V__fml:op operation) (V__fml:tx transaction) (V__sk__HT transaction)) (and (forall ((V0 transaction) (V1 key)) (= (write_tx V0 V1) (ite __ts0_a (ite (and (= V0 V__fml:tx) (= V1 V__fml:kw)) true (__write_tx V0 V1)) (__write_tx V0 V1)))) (= __ts0_a (op_writes_key V__fml:op V__fml:kw)) (forall ((V0 transaction) (V1 key)) (= (read_tx V0 V1) (ite __ts0_a_a (ite (and (= V0 V__fml:tx) (= V1 V__fml:kr)) true (__read_tx V0 V1)) (__read_tx V0 V1)))) (forall ((V0 transaction) (V1 key) (V2 transaction)) (= (depends_tx V0 V1 V2) (ite __ts0_a_a (ite (and (= V0 V__fml:tx) (= V1 V__fml:kr) (= V2 V__fml:lcwkr)) true (__depends_tx V0 V1 V2)) (__depends_tx V0 V1 V2)))) (= __ts0_a_a (op_reads_key V__fml:op V__fml:kr)) (forall ((V0 transaction) (V1 node)) (= (precommit_tx V0 V1) (ite (and (= V0 V__fml:tx) (= V1 V__fml:n)) true (__precommit_tx V0 V1)))) (forall ((V0 transaction)) (= (commit_tx V0) (ite __ts0_a_b (ite (= V0 V__fml:tx) true (__commit_tx V0)) (__commit_tx V0)))) (= __ts0_a_b (forall ((O operation)) (=> (oporder V__fml:op O) (= O V__fml:op)))) (op_in_tx V__fml:tx V__fml:op) (not (__abort_tx V__fml:tx)) (not (__commit_tx V__fml:tx)) (forall ((N node) (X operation)) (=> (and (oporder X V__fml:op) (not (= X V__fml:op)) (op_node X N)) (__precommit_tx V__fml:tx N))) (op_node V__fml:op V__fml:n) (not (__precommit_tx V__fml:tx V__fml:n)) (forall ((K key)) (or (not (op_writes_key V__fml:op K)) (op_writes_key V__fml:op V__fml:kw))) (=> (op_writes_key V__fml:op V__fml:kw) (node_for_key V__fml:kw V__fml:n)) (forall ((K key)) (or (not (op_reads_key V__fml:op K)) (op_reads_key V__fml:op V__fml:kr))) (=> (op_reads_key V__fml:op V__fml:kr) (node_for_key V__fml:kr V__fml:n)) (__write_tx V__fml:luwkw V__fml:kw) (not (__abort_tx V__fml:luwkw)) (forall ((T transaction)) (=> (__write_tx T V__fml:kw) (or (le T V__fml:luwkw) (__abort_tx T)))) (__depends_tx V__fml:lurkw V__fml:kw V__sk__HT) (not (__abort_tx V__fml:lurkw)) (forall ((T transaction)) (=> (__read_tx T V__fml:kw) (or (le T V__fml:lurkw) (__abort_tx T)))) (__write_tx V__fml:luwkr V__fml:kr) (le V__fml:luwkr V__fml:tx) (not (__abort_tx V__fml:luwkr)) (forall ((T transaction)) (=> (__write_tx T V__fml:kr) (or (le T V__fml:luwkr) (le V__fml:tx T) (__abort_tx T)))) (__commit_tx V__fml:lcwkr) (__write_tx V__fml:lcwkr V__fml:kr) (le V__fml:lcwkr V__fml:tx) (forall ((T transaction)) (=> (and (__commit_tx T) (__write_tx T V__fml:kr)) (or (le T V__fml:lcwkr) (le V__fml:tx T)))) (not (or (and (op_writes_key V__fml:op V__fml:kw) (or (le V__fml:tx V__fml:luwkw) (le V__fml:tx V__fml:lurkw))) (and (op_reads_key V__fml:op V__fml:kr) (not (= V__fml:luwkr V__fml:lcwkr)) (le V__fml:luwkr V__fml:tx))))))
+ ))
+ (and $v))
+ :action ext:do_progress))
+
+(define-fun .action_ext:do_abort () Bool (! 
+ (let (($v (exists ((V__fml:kr key) (V__fml:kw key) (V__fml:lcwkr transaction) (V__fml:lurkw transaction) (V__fml:luwkr transaction) (V__fml:luwkw transaction) (V__fml:n node) (V__fml:op operation) (V__fml:tx transaction) (V__sk__HT transaction)) (and (forall ((V0 transaction)) (= (abort_tx V0) (ite (= V0 V__fml:tx) true (__abort_tx V0)))) (op_in_tx V__fml:tx V__fml:op) (not (__abort_tx V__fml:tx)) (not (__commit_tx V__fml:tx)) (forall ((N node) (X operation)) (=> (and (oporder X V__fml:op) (not (= X V__fml:op)) (op_node X N)) (__precommit_tx V__fml:tx N))) (op_node V__fml:op V__fml:n) (not (__precommit_tx V__fml:tx V__fml:n)) (forall ((K key)) (or (not (op_writes_key V__fml:op K)) (op_writes_key V__fml:op V__fml:kw))) (=> (op_writes_key V__fml:op V__fml:kw) (node_for_key V__fml:kw V__fml:n)) (forall ((K key)) (or (not (op_reads_key V__fml:op K)) (op_reads_key V__fml:op V__fml:kr))) (=> (op_reads_key V__fml:op V__fml:kr) (node_for_key V__fml:kr V__fml:n)) (__write_tx V__fml:luwkw V__fml:kw) (not (__abort_tx V__fml:luwkw)) (forall ((T transaction)) (=> (__write_tx T V__fml:kw) (or (le T V__fml:luwkw) (__abort_tx T)))) (__depends_tx V__fml:lurkw V__fml:kw V__sk__HT) (not (__abort_tx V__fml:lurkw)) (forall ((T transaction)) (=> (__read_tx T V__fml:kw) (or (le T V__fml:lurkw) (__abort_tx T)))) (__write_tx V__fml:luwkr V__fml:kr) (le V__fml:luwkr V__fml:tx) (not (__abort_tx V__fml:luwkr)) (forall ((T transaction)) (=> (__write_tx T V__fml:kr) (or (le T V__fml:luwkr) (le V__fml:tx T) (__abort_tx T)))) (__commit_tx V__fml:lcwkr) (__write_tx V__fml:lcwkr V__fml:kr) (le V__fml:lcwkr V__fml:tx) (forall ((T transaction)) (=> (and (__commit_tx T) (__write_tx T V__fml:kr)) (or (le T V__fml:lcwkr) (le V__fml:tx T)))) (or (and (op_writes_key V__fml:op V__fml:kw) (or (le V__fml:tx V__fml:luwkw) (le V__fml:tx V__fml:lurkw))) (and (op_reads_key V__fml:op V__fml:kr) (not (= V__fml:luwkr V__fml:lcwkr)) (le V__fml:luwkr V__fml:tx)))))
+ ))
+ (and $v))
+ :action ext:do_abort))
+

@@ -1,0 +1,107 @@
+(declare-sort quorum_a 0)
+(declare-sort node 0)
+(declare-sort quorum_b 0)
+
+(define-fun .quorum_a ((S quorum_a)) quorum_a (! S :sort 2))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .quorum_b ((S quorum_b)) quorum_b (! S :sort 2))
+
+(declare-fun __sent_msg (node node) Bool)
+(declare-fun __accept (node) Bool)
+(declare-fun __rcv_msg (node node) Bool)
+(declare-fun __sent_msg_proj (node) Bool)
+
+(declare-fun sent_msg (node node) Bool)
+(declare-fun accept (node) Bool)
+(declare-fun rcv_msg (node node) Bool)
+(declare-fun sent_msg_proj (node) Bool)
+
+(define-fun .sent_msg ((V0 node) (V1 node)) Bool (! (__sent_msg V0 V1) :next sent_msg))
+(define-fun .accept ((V0 node)) Bool (! (__accept V0) :next accept))
+(define-fun .rcv_msg ((V0 node) (V1 node)) Bool (! (__rcv_msg V0 V1) :next rcv_msg))
+(define-fun .sent_msg_proj ((V0 node)) Bool (! (__sent_msg_proj V0) :next sent_msg_proj))
+
+(declare-fun member_b (node quorum_b) Bool)
+(declare-fun member_fa (node) Bool)
+(declare-fun member_a (node quorum_a) Bool)
+(declare-fun member_fs (node) Bool)
+(declare-fun rcv_init (node) Bool)
+(declare-fun member_fc (node) Bool)
+(declare-fun member_fi (node) Bool)
+
+(define-fun .member_b ((V0 node) (V1 quorum_b)) Bool (! (member_b V0 V1) :global true))
+(define-fun .member_fa ((V0 node)) Bool (! (member_fa V0) :global true))
+(define-fun .member_a ((V0 node) (V1 quorum_a)) Bool (! (member_a V0 V1) :global true))
+(define-fun .member_fs ((V0 node)) Bool (! (member_fs V0) :global true))
+(define-fun .rcv_init ((V0 node)) Bool (! (rcv_init V0) :global true))
+(define-fun .member_fc ((V0 node)) Bool (! (member_fc V0) :global true))
+(define-fun .member_fi ((V0 node)) Bool (! (member_fi V0) :global true))
+
+(declare-fun __fml:nondet () Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (=> (exists ((N node)) (and (not (member_fs N)) (not (member_fa N)) (__accept N))) (exists ((M node)) (and (not (member_fs M)) (not (member_fa M)) (rcv_init M))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (and (not (member_fa N)) (not (member_fc N)) (not (member_fs N)) (not (member_fi N)))))) (forall ((A_BP quorum_a)) (exists ((N node)) (and (member_a N A_BP) (not (member_fa N)) (not (member_fs N))))) (forall ((B_CF quorum_b)) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (and (member_b N B_CF) (not (member_fa N)) (not (member_fi N))))))) (forall ((N node)) (not (and (member_fc N) (member_fi N)))) (forall ((N node)) (not (and (member_fc N) (member_fs N)))) (forall ((N node)) (not (and (member_fc N) (member_fa N)))) (forall ((N node)) (not (and (member_fi N) (member_fs N)))) (forall ((N node)) (not (and (member_fi N) (member_fa N)))) (forall ((N node)) (not (and (member_fs N) (member_fa N)))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__accept V0) false)) (forall ((V0 node) (V1 node)) (= (__sent_msg V0 V1) false)) (forall ((V0 node)) (= (__sent_msg_proj V0) false)) (forall ((V0 node) (V1 node)) (= (__rcv_msg V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:faulty_send_a () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fa V__fml:n)))
+ ))
+ (and $v))
+ :action ext:faulty_send_a))
+
+(define-fun .action_ext:receive_init () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) true (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) true (__sent_msg_proj V0)))) (rcv_init V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_init))
+
+(define-fun .action_ext:receive_init_i () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fi V__fml:n) (rcv_init V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_init_i))
+
+(define-fun .action_ext:receive_msg_c () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg_proj V0)))) (member_fc V__fml:n) (__sent_msg V__fml:s V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_msg_c))
+
+(define-fun .action_ext:faulty_send_s () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) true (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) true (__sent_msg_proj V0)))) (member_fs V__fml:n)))
+ ))
+ (and $v))
+ :action ext:faulty_send_s))
+
+(define-fun .action_ext:faulty_state_sa () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (or (member_fs V__fml:n) (member_fa V__fml:n)) (forall ((X0 node) (X1 node)) (or (not (rcv_msg X0 X1)) (__rcv_msg X0 X1) (= X1 V__fml:n))) (forall ((X0 node) (X1 node)) (or (rcv_msg X0 X1) (not (__rcv_msg X0 X1)) (= X1 V__fml:n))) (forall ((X0 node)) (or (not (accept X0)) (__accept X0) (= X0 V__fml:n))) (forall ((X0 node)) (or (accept X0) (not (__accept X0)) (= X0 V__fml:n)))))
+ ))
+ (and $v))
+ :action ext:faulty_state_sa))
+
+(define-fun .action_ext:receive_msg_i () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg V0 V1)))) (member_fi V__fml:n) (__sent_msg V__fml:s V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_msg_i))
+
+(define-fun .action_ext:receive_msg () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n))))) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n))))) (__sent_msg_proj V0)))) (__sent_msg V__fml:s V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_msg))
+

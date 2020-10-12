@@ -1,0 +1,51 @@
+#lang ivy1.7
+
+type resource_manager
+
+relation working(R:resource_manager)
+relation prepared(R:resource_manager)
+relation committed(R:resource_manager)
+relation aborted(R:resource_manager)
+
+after init {
+	working(R) := true;
+	prepared(R) := false;
+	committed(R) := false;
+	aborted(R) := false;
+}
+
+action prepare(rm:resource_manager) = {
+	require working(rm);
+	working(rm) := false;
+	prepared(rm) := true;
+	committed(rm) := false;
+	aborted(rm) := false;
+}
+
+action decide_commit(rm:resource_manager) = {
+	require prepared(rm);
+	require forall R. (prepared(R) | committed(R));
+	working(rm) := false;
+	prepared(rm) := false;
+	committed(rm) := true;
+	aborted(rm) := false;
+}
+
+action decide_abort(rm:resource_manager) = {
+	require (working(rm) | prepared(rm));
+	require forall R. ~committed(R);
+	working(rm) := false;
+	prepared(rm) := false;
+	committed(rm) := false;
+	aborted(rm) := true;
+}
+
+export prepare
+export decide_commit
+export decide_abort
+
+invariant [safety] (forall R1, R2. ~(aborted(R1) & committed(R2)) )
+
+invariant [manual_1] forall R:resource_manager. working(R) | prepared(R) | committed(R) | aborted(R)
+
+invariant [manual_ic3po2]	(forall R0 . (aborted(R0) -> ~prepared(R0)))

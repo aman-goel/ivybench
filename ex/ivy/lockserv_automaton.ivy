@@ -1,0 +1,84 @@
+#lang ivy1.7
+
+# The Verdi lock service example.
+# Source: https://github.com/wilcoxjay/notes/blob/26f67634fd085d58f89ef5ab0e058fc2da4d6bd4/lockserv_automaton.ivy
+
+type node
+
+relation lock_msg(N:node)
+relation unlock_msg(N:node)
+relation grant_msg(N:node)
+
+relation holds_lock(N: node)
+
+relation held
+
+#type tag = {tag_server, tag_grant, tag_client, tag_unlock}
+
+after init {
+    lock_msg(N) := false;
+    unlock_msg(N) := false;
+    grant_msg(N) := false;
+    holds_lock(N) := false;
+    held := false;
+}
+
+action lock(n: node) = {
+    lock_msg(n) := true;
+}
+export lock
+
+action unlock(n: node) = {
+    require holds_lock(n);
+    holds_lock(n) := false;
+    unlock_msg(n) := true;
+}
+export unlock
+
+action recv_lock(sender: node) = {
+    require lock_msg(sender);
+    require ~held;
+    held := true;
+    lock_msg(sender) := false;
+    grant_msg(sender) := true;
+}
+export recv_lock
+
+action recv_grant(n: node) = {
+    require grant_msg(n);
+    grant_msg(n) := false;
+    holds_lock(n) := true;
+}
+export recv_grant
+
+action recv_unlock(sender: node) = {
+    require unlock_msg(sender);
+    unlock_msg(sender) := false;
+    held := false;
+}
+export recv_unlock
+
+# Mutual exclusion: No two clients think they hold the lock simultaneously.
+invariant holds_lock(X) & holds_lock(Y) -> X = Y
+
+invariant [manual_1] (
+    ~held &
+    (forall N. ~grant_msg(N)) &
+    (forall N. ~holds_lock(N)) &
+    (forall N. ~unlock_msg(N))
+) | (
+    held &
+    (forall N1, N2. grant_msg(N1) & grant_msg(N2) -> N1 = N2) &
+    (forall N. ~holds_lock(N)) &
+    (forall N. ~unlock_msg(N))
+) | (
+    held &
+    (forall N. ~grant_msg(N)) &
+    (forall N1, N2. holds_lock(N1) & holds_lock(N2) -> N1 = N2) &
+    (forall N. ~unlock_msg(N))
+) | (
+    held &
+    (forall N. ~grant_msg(N)) &
+    (forall N. ~holds_lock(N)) &
+    (forall N1, N2. unlock_msg(N1) & unlock_msg(N2) -> N1 = N2)
+)

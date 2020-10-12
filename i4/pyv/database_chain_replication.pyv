@@ -1,0 +1,110 @@
+sort transaction
+sort node
+sort key
+sort operation
+
+immutable relation le(transaction, transaction) @no_minimize
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+immutable constant zero:transaction
+axiom le(zero, X)
+
+immutable relation op_reads_key(operation, key) @no_minimize
+axiom (op_reads_key(X, Y1) & op_reads_key(X, Y2)) -> Y1 = Y2
+
+immutable relation op_writes_key(operation, key) @no_minimize
+axiom (op_writes_key(X, Y1) & op_writes_key(X, Y2)) -> Y1 = Y2
+
+axiom forall Op. op_reads_key(Op, K1) & op_writes_key(Op, K2) -> K1 != K2
+
+immutable relation op_node(operation, node) @no_minimize
+axiom (op_node(X, Y1) & op_node(X, Y2)) -> Y1 = Y2
+
+immutable relation node_for_key(key,  node) @no_minimize
+axiom (node_for_key(X, Y1) & node_for_key(X, Y2)) -> Y1 = Y2
+axiom forall Op. op_reads_key(Op, K) & node_for_key(K, N1)  & op_node(Op, N2) -> N1 = N2  #Operations must be local
+axiom forall Op. op_writes_key(Op, K) & node_for_key(K, N1) &  op_node(Op, N2) -> N1 = N2 #Operations must be local
+
+immutable relation op_in_tx(transaction, operation) @no_minimize
+axiom (op_in_tx(X1, Y) & op_in_tx(X2, Y)) -> X1 = X2
+
+immutable relation oporder(operation, operation) @no_minimize
+axiom oporder(X, X) # Reflexive
+axiom oporder(X, Y) & oporder(Y, Z) -> oporder(X, Z) # Transitive
+axiom oporder(X, Y) & oporder(Y, X) -> X = Y # Anti-symmetric
+axiom (op_in_tx(T, X) & op_in_tx(T, Y)) -> (oporder(X, Y) | oporder(Y, X)) # total for operations in the same transaction
+axiom (op_in_tx(T, X) & (oporder(X, Y) | oporder(Y, X))) -> op_in_tx(T, Y) # op_in_tx is closed under the order
+
+axiom op_in_tx(T, O1) & op_in_tx(T, O2) & O1 != O2 & op_node(O1, N1) & op_node(O2, N2) -> N1 != N2
+
+mutable relation precommit_tx(transaction, node) # Is transaction tx precommitted at n
+mutable relation abort_tx(transaction)
+mutable relation commit_tx(transaction) # Is tx committed
+mutable relation depends_tx(transaction, key, transaction) #Flow values between commited transactions
+
+mutable relation read_tx(transaction, key)
+mutable relation write_tx(transaction, key)
+
+init (precommit_tx(T, N) = (T = zero))
+init !abort_tx(T)
+init (commit_tx(T) = (T = zero))
+init (depends_tx(T1, K, T2) = (T1 = zero & T2 = zero))
+init (forall Tx. read_tx(Tx, K) = (Tx = zero))
+init (forall Tx. write_tx(Tx, K) = (Tx = zero))
+
+transition do_abort(tx: transaction, op: operation, n: node, kw: key, kr: key, luwkw: transaction, lurkw: transaction, luwkr: transaction, lcwkr: transaction)
+    modifies abort_tx
+    & (op_in_tx(tx, op))
+    & (!old(abort_tx(tx)) & !old(commit_tx(tx)))
+    & ((oporder(X, op) & X != op & op_node(X, N)) -> old(precommit_tx(tx, N)))
+    & (op_node(op, n))
+    & (!old(precommit_tx(tx, n)))
+    & (!op_writes_key(op, K) | op_writes_key(op, kw))
+    & (op_writes_key(op, kw) -> node_for_key(kw, n))
+    & (!op_reads_key(op, K) | op_reads_key(op, kr))
+    & (op_reads_key(op, kr) -> node_for_key(kr, n))
+    & (old(write_tx(luwkw, kw)) & (!old(abort_tx(luwkw))) & (old(write_tx(T, kw)) -> (le(T, luwkw) | old(abort_tx(T)))))
+    & (exists HT. old(depends_tx(lurkw, kw, HT)) & (!old(abort_tx(lurkw))) & (old(read_tx(T, kw)) -> le(T, lurkw) | old(abort_tx(T))))
+    & (old(write_tx(luwkr, kr)) & le(luwkr, tx) & (!old(abort_tx(luwkr))) & (old(write_tx(T, kr)) -> (le(T, luwkr) | le(tx, T) | old(abort_tx(T)))))
+    & (old(commit_tx(lcwkr)) & old(write_tx(lcwkr, kr)) & le(lcwkr, tx) & ((old(commit_tx(T)) & old(write_tx(T, kr))) -> (le(T, lcwkr) | le(tx, T))))
+    & ((op_writes_key(op, kw) & (le(tx, luwkw) | le(tx, lurkw))) | (op_reads_key(op, kr) & luwkr != lcwkr & le(luwkr, tx)))
+    & (abort_tx(T) <-> old(abort_tx(T)) | (T = tx))
+
+transition do_progress(tx: transaction, op: operation, n: node, kw: key, kr: key, luwkw: transaction, lurkw: transaction, luwkr: transaction, lcwkr: transaction)
+    modifies write_tx, depends_tx, read_tx, precommit_tx, commit_tx
+    & (op_in_tx(tx, op))
+    & (!old(abort_tx(tx)) & !old(commit_tx(tx)))
+    & ((oporder(X, op) & X != op & op_node(X, N)) -> old(precommit_tx(tx, N)))
+    & (op_node(op, n))
+    & (!old(precommit_tx(tx, n)))
+    & (!op_writes_key(op, K) | op_writes_key(op, kw))
+    & (op_writes_key(op, kw) -> node_for_key(kw, n))
+    & (!op_reads_key(op, K) | op_reads_key(op, kr))
+    & (op_reads_key(op, kr) -> node_for_key(kr, n))
+    & (old(write_tx(luwkw, kw)) & (!old(abort_tx(luwkw))) & (old(write_tx(T, kw)) -> (le(T, luwkw) | old(abort_tx(T)))))
+    & (exists HT. old(depends_tx(lurkw, kw, HT)) & (!old(abort_tx(lurkw))) & (old(read_tx(T, kw)) -> le(T, lurkw) | old(abort_tx(T))))
+    & (old(write_tx(luwkr, kr)) & le(luwkr, tx) & (!old(abort_tx(luwkr))) & (old(write_tx(T, kr)) -> (le(T, luwkr) | le(tx, T) | old(abort_tx(T)))))
+    & (old(commit_tx(lcwkr)) & old(write_tx(lcwkr, kr)) & le(lcwkr, tx) & ((old(commit_tx(T)) & old(write_tx(T, kr))) -> (le(T, lcwkr) | le(tx, T))))
+    & (!((op_writes_key(op, kw) & (le(tx, luwkw) | le(tx, lurkw))) | (op_reads_key(op, kr) & luwkr != lcwkr & le(luwkr, tx))))
+    & (write_tx(T, K) <-> old(write_tx(T, K)) | (T = tx & K = kw & (op_writes_key(op, kw))))
+    & (depends_tx(T1, K, T2) <-> old(depends_tx(T1, K, T2)) | (T1 = tx & K = kr & T2 = lcwkr & (op_reads_key(op, kr))))
+    & (read_tx(T, K) <-> old(read_tx(T, K)) | (T = tx & K = kr & (op_reads_key(op, kr))))
+    & (precommit_tx(T, N) <-> old(precommit_tx(T, N)) | (T = tx & N = n))
+    & (commit_tx(T) <-> old(commit_tx(T)) | (T = tx & (forall O. (oporder(op, O) -> O = op))))
+
+# Safety: Linearizability
+safety [prop] (!(TX1 != TX2 &
+	    commit_tx(TX1) &
+	    commit_tx(TX2)  &
+	    le(TX1,TX2) & # TX1 was before TX2
+	    write_tx(TX1, K) & # TX1 wrote K
+	    depends_tx(TX2, K, T3) & # TX2 read K
+	    !le(TX1, T3)))
+        & ((commit_tx(T) & op_in_tx(T, O) & op_node(O, N)) -> precommit_tx(T, N))   # Safety: Atomicity
+
+invariant [help_2_ic3po_required]	(forall T2, T1, T0, K0 . ((write_tx(T1, K0) & depends_tx(T0, K0, T2)) -> (abort_tx(T0) | abort_tx(T1) | le(T1, T2) | le(T0, T1))))
+invariant [help_10_ic3po_required]	(forall T2, T1, T0, N0, K0 . ((write_tx(T0, K0) & node_for_key(K0, N0) & depends_tx(T1, K0, T2)) -> (abort_tx(T0) | le(T0, T2) | le(T1, T0) | precommit_tx(T0, N0))))
+invariant [help_11_ic3po_required]	(forall T0 . (commit_tx(T0) -> !abort_tx(T0)))
+invariant [help_16_ic3po_required]	(forall T1, T0, K0 . (depends_tx(T1, K0, T0) -> read_tx(T1, K0)))

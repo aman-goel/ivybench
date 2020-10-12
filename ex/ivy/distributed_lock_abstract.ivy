@@ -1,0 +1,68 @@
+#lang ivy1.7
+
+# Source: modified version of distributed lock example
+
+module total_order(r) = {
+    axiom r(X,X)                        # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+type node
+type epoch
+
+relation le(X:epoch, Y:epoch)
+instantiate total_order(le)
+individual zero:epoch
+axiom le(zero, X)
+
+relation gt(E:epoch, N:node)# the safety property
+
+relation held(N:node)
+relation transfer_msg(E:epoch, D:node)
+relation locked(E:epoch, N:node)
+
+individual first:node
+
+after init {
+    held(X) := X=first;
+    gt(X, N) := X~=zero;
+    transfer_msg(E, D) := false;
+    locked(E, N) := false;
+}
+
+action grant(src:node, dst:node, e:epoch) = {
+    require held(src);
+    require gt(e, src);
+    
+    held(src) := false;
+    transfer_msg(e, dst) := true;
+}
+
+action accept(dst:node, e:epoch) = {
+    require transfer_msg(e, dst);
+    
+    if gt(e, dst) {
+        held(dst) := true;
+        gt(E, dst) := true if ~le(E, e) else false;
+        locked(e, dst) := true;
+    };
+}
+
+export grant
+export accept
+
+invariant [safety] locked(E, N1) & locked(E, N2) -> N1 = N2
+
+invariant [manual_1] transfer_msg(E, N1) & transfer_msg(E, N2) -> N1 = N2
+invariant [manual_2] locked(E, N) -> ~gt(E, N)
+invariant [manual_3] gt(E0, N1) & held(N1) -> gt(E0, N0)
+invariant [manual_4] held(N) & transfer_msg(E, M) -> ~gt(E, N)
+invariant [manual_5] transfer_msg(E, N) & gt(E, N) -> gt(E, M)
+invariant [manual_6] transfer_msg(E, N) & gt(E, N) & transfer_msg(F, M) -> le(F, E)
+invariant [manual_ic3po7]	(forall E0, E1, N0 . ((gt(E0, N0) & le(E0, E1)) -> gt(E1, N0)))
+invariant [manual_ic3po8]	(forall E0, E1, N0 . (gt(E0, N0) -> (held(N0) -> (transfer_msg(E1, N0) -> ~le(E0, E1)))))
+invariant [manual_ic3po9]	(forall N1, N0 . ((held(N0) & held(N1)) -> (N0 = N1)))
+invariant [manual_ic3po10]	(forall N0 . ~gt(zero, N0))
+invariant [manual_ic3po11]	(forall E0, N0 . (locked(E0, N0) -> ((E0 = zero) | transfer_msg(E0, N0))))

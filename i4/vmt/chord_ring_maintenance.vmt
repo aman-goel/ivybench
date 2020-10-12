@@ -1,0 +1,111 @@
+(declare-sort node 0)
+
+(define-fun .node ((S node)) node (! S :sort 3))
+
+(declare-fun __error (node) Bool)
+(declare-fun __s1 (node node) Bool)
+(declare-fun __in_s2 (node) Bool)
+(declare-fun __s2 (node node) Bool)
+(declare-fun __in_s1 (node) Bool)
+(declare-fun __p (node node) Bool)
+(declare-fun __a (node) Bool)
+(declare-fun __reach (node) Bool)
+
+(declare-fun error (node) Bool)
+(declare-fun s1 (node node) Bool)
+(declare-fun in_s2 (node) Bool)
+(declare-fun s2 (node node) Bool)
+(declare-fun in_s1 (node) Bool)
+(declare-fun p (node node) Bool)
+(declare-fun a (node) Bool)
+(declare-fun reach (node) Bool)
+
+(define-fun .error ((V0 node)) Bool (! (__error V0) :next error))
+(define-fun .s1 ((V0 node) (V1 node)) Bool (! (__s1 V0 V1) :next s1))
+(define-fun .in_s2 ((V0 node)) Bool (! (__in_s2 V0) :next in_s2))
+(define-fun .s2 ((V0 node) (V1 node)) Bool (! (__s2 V0 V1) :next s2))
+(define-fun .in_s1 ((V0 node)) Bool (! (__in_s1 V0) :next in_s1))
+(define-fun .p ((V0 node) (V1 node)) Bool (! (__p V0 V1) :next p))
+(define-fun .a ((V0 node)) Bool (! (__a V0) :next a))
+(define-fun .reach ((V0 node)) Bool (! (__reach V0) :next reach))
+
+(declare-fun org () node)
+(declare-fun ring.btw (node node node) Bool)
+(declare-fun other () node)
+
+(define-fun .org () node (! org :global true))
+(define-fun .ring.btw ((V0 node) (V1 node) (V2 node)) Bool (! (ring.btw V0 V1 V2) :global true))
+(define-fun .other () node (! other :global true))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((N node)) (not (__error N)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((W node) (X node) (Y node) (Z node)) (=> (and (ring.btw W X Y) (ring.btw W Y Z)) (ring.btw W X Z))) (forall ((W node) (X node) (Y node)) (=> (ring.btw W X Y) (not (ring.btw W Y X)))) (forall ((W node) (X node) (Y node)) (or (ring.btw W X Y) (ring.btw W Y X) (= W X) (= X Y))) (forall ((X node) (Y node) (Z node)) (=> (and (ring.btw X Y Z) (not (= X Z))) (ring.btw Y Z X))) (not (= other org)))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__a V0) (or (= V0 org) (= V0 other)))) (forall ((V0 node) (V1 node)) (= (__s1 V0 V1) (or (and (= V0 org) (= V1 other)) (and (= V0 other) (= V1 org))))) (forall ((V0 node)) (= (__in_s1 V0) (or (= V0 org) (= V0 other)))) (forall ((V0 node) (V1 node)) (= (__s2 V0 V1) false)) (forall ((V0 node)) (= (__in_s2 V0) false)) (forall ((V0 node) (V1 node)) (= (__p V0 V1) (or (and (= V0 org) (= V1 other)) (and (= V0 other) (= V1 org))))) (forall ((V0 node)) (= (__reach V0) (= V0 org))) (forall ((V0 node)) (= (__error V0) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:remove () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node) (V1 node)) (= (s1 V0 V1) (ite (= V0 V__fml:x) (= V1 V__fml:z) (__s1 V0 V1)))) (forall ((V0 node)) (= (in_s1 V0) (ite (= V0 V__fml:x) true (__in_s1 V0)))) (forall ((V0 node) (V1 node)) (= (s2 V0 V1) (ite (= V0 V__fml:x) false (__s2 V0 V1)))) (forall ((V0 node)) (= (in_s2 V0) (ite (= V0 V__fml:x) false (__in_s2 V0)))) (__a V__fml:x) (__s1 V__fml:x V__fml:y) (not (__a V__fml:y)) (__s2 V__fml:x V__fml:z)))
+ ))
+ (and $v))
+ :action ext:remove))
+
+(define-fun .action_ext:test () Bool (! 
+ (let (($v (exists ((V__fml:x node)) (and (forall ((V0 node)) (= (error V0) (ite (= V0 V__fml:x) true (__error V0)))) (forall ((X node) (Y node)) (=> (and (__s1 X Y) (__a Y) (__reach Y)) (__reach X))) (forall ((X node) (Y node) (Z node)) (=> (and (__s1 X Y) (not (__a Y)) (__s2 X Z) (__a Z) (__reach Z)) (__reach X))) (forall ((Y node)) (=> (and (ring.btw V__fml:x Y org) (__a Y)) (__reach Y))) (__a V__fml:x) (not (__reach V__fml:x)) (=> (__in_s1 V__fml:x) (exists ((Y node)) (__s1 V__fml:x Y))) (=> (__in_s2 V__fml:x) (exists ((Y node)) (__s2 V__fml:x Y)))))
+ ))
+ (and $v))
+ :action ext:test))
+
+(define-fun .action_ext:join () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node)) (and (forall ((V0 node)) (= (a V0) (ite (= V0 V__fml:x) true (__a V0)))) (forall ((V0 node) (V1 node)) (= (s1 V0 V1) (ite (= V0 V__fml:x) (= V__fml:y V1) (__s1 V0 V1)))) (forall ((V0 node)) (= (in_s1 V0) (ite (= V0 V__fml:x) true (__in_s1 V0)))) (forall ((V0 node) (V1 node)) (= (s2 V0 V1) (ite (= V0 V__fml:x) false (__s2 V0 V1)))) (forall ((V0 node)) (= (in_s2 V0) (ite (= V0 V__fml:x) false (__in_s2 V0)))) (forall ((V0 node) (V1 node)) (= (p V0 V1) (ite (= V0 V__fml:x) false (__p V0 V1)))) (not (__a V__fml:x)) (__a V__fml:y) (not (ring.btw V__fml:x org V__fml:y))))
+ ))
+ (and $v))
+ :action ext:join))
+
+(define-fun .action_ext:notify () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node) (V1 node)) (= (p V0 V1) (ite (= V0 V__fml:y) (= V1 V__fml:x) (__p V0 V1)))) (__a V__fml:x) (__s1 V__fml:x V__fml:y) (__a V__fml:y) (forall ((X node)) (or (__p V__fml:y V__fml:z) (not (__p V__fml:y X)))) (ring.btw V__fml:z V__fml:x V__fml:y)))
+ ))
+ (and $v))
+ :action ext:notify))
+
+(define-fun .action_ext:fail () Bool (! 
+ (let (($v (exists ((V__fml:x node)) (and (forall ((V0 node)) (= (a V0) (ite (= V0 V__fml:x) false (__a V0)))) (forall ((V0 node) (V1 node)) (= (p V0 V1) (ite (= V0 V__fml:x) false (__p V0 V1)))) (forall ((V0 node) (V1 node)) (= (s1 V0 V1) (ite (= V0 V__fml:x) false (__s1 V0 V1)))) (forall ((V0 node)) (= (in_s1 V0) (ite (= V0 V__fml:x) false (__in_s1 V0)))) (forall ((V0 node) (V1 node)) (= (s2 V0 V1) (ite (= V0 V__fml:x) false (__s2 V0 V1)))) (forall ((V0 node)) (= (in_s2 V0) (ite (= V0 V__fml:x) false (__in_s2 V0)))) (__a V__fml:x) (not (= V__fml:x org)) (forall ((Y node)) (=> (__s1 Y V__fml:x) (__in_s2 Y))) (forall ((Y node) (Z node)) (=> (and (__s1 Y V__fml:x) (__s2 Y Z)) (__a Z))) (forall ((X node) (Y node)) (=> (and (__s1 X Y) (__s2 X V__fml:x)) (and (not (= Y V__fml:x)) (__a Y))))))
+ ))
+ (and $v))
+ :action ext:fail))
+
+(define-fun .action_ext:stabilize () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node) (V1 node)) (= (s1 V0 V1) (ite (= V0 V__fml:x) (= V1 V__fml:z) (__s1 V0 V1)))) (forall ((V0 node)) (= (in_s1 V0) (ite (= V0 V__fml:x) true (__in_s1 V0)))) (forall ((V0 node) (V1 node)) (= (s2 V0 V1) (ite (= V0 V__fml:x) (= V1 V__fml:y) (__s2 V0 V1)))) (forall ((V0 node)) (= (in_s2 V0) (ite (= V0 V__fml:x) true (__in_s2 V0)))) (__a V__fml:x) (__s1 V__fml:x V__fml:y) (__a V__fml:y) (__p V__fml:y V__fml:z) (ring.btw V__fml:x V__fml:z V__fml:y)))
+ ))
+ (and $v))
+ :action ext:stabilize))
+
+(define-fun .action_ext:remove_org () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node)) (= (reach V0) (ite (= V0 V__fml:x) false (__reach V0)))) (not (= V__fml:x org)) (__s1 V__fml:x V__fml:y) (or (not (__a V__fml:y)) (not (__reach V__fml:y))) (forall ((Z node)) (=> (not (__a V__fml:y)) (or (not (__s2 V__fml:x Z)) (__s2 V__fml:x V__fml:z)))) (=> (and (not (__a V__fml:y)) (__s2 V__fml:x V__fml:z)) (or (not (__a V__fml:z)) (not (__reach V__fml:z))))))
+ ))
+ (and $v))
+ :action ext:remove_org))
+
+(define-fun .action_ext:inherit () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node) (V1 node)) (= (s2 V0 V1) (ite (= V0 V__fml:x) (= V1 V__fml:z) (__s2 V0 V1)))) (forall ((V0 node)) (= (in_s2 V0) (ite (= V0 V__fml:x) true (__in_s2 V0)))) (__a V__fml:x) (__s1 V__fml:x V__fml:y) (__a V__fml:y) (__s1 V__fml:y V__fml:z)))
+ ))
+ (and $v))
+ :action ext:inherit))
+
+(define-fun .action_ext:reach_org () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node) (V__fml:z node)) (and (forall ((V0 node)) (= (reach V0) (ite (= V0 V__fml:x) true (__reach V0)))) (or (and (__s1 V__fml:x V__fml:y) (__a V__fml:y) (__reach V__fml:y)) (and (__s1 V__fml:x V__fml:y) (not (__a V__fml:y)) (__s2 V__fml:x V__fml:z) (__a V__fml:z) (__reach V__fml:z)))))
+ ))
+ (and $v))
+ :action ext:reach_org))
+

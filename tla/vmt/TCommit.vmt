@@ -1,0 +1,49 @@
+(declare-sort resource_manager 0)
+
+(define-fun .resource_manager ((S resource_manager)) resource_manager (! S :sort 2))
+
+(declare-fun __aborted (resource_manager) Bool)
+(declare-fun __committed (resource_manager) Bool)
+(declare-fun __working (resource_manager) Bool)
+(declare-fun __prepared (resource_manager) Bool)
+
+(declare-fun aborted (resource_manager) Bool)
+(declare-fun committed (resource_manager) Bool)
+(declare-fun working (resource_manager) Bool)
+(declare-fun prepared (resource_manager) Bool)
+
+(define-fun .aborted ((V0 resource_manager)) Bool (! (__aborted V0) :next aborted))
+(define-fun .committed ((V0 resource_manager)) Bool (! (__committed V0) :next committed))
+(define-fun .working ((V0 resource_manager)) Bool (! (__working V0) :next working))
+(define-fun .prepared ((V0 resource_manager)) Bool (! (__prepared V0) :next prepared))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((R1 resource_manager) (R2 resource_manager)) (not (and (__aborted R1) (__committed R2))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 resource_manager)) (= (__working V0) true)) (forall ((V0 resource_manager)) (= (__prepared V0) false)) (forall ((V0 resource_manager)) (= (__committed V0) false)) (forall ((V0 resource_manager)) (= (__aborted V0) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:decide_abort () Bool (! 
+ (let (($v (exists ((V__fml:rm resource_manager)) (and (forall ((V0 resource_manager)) (= (working V0) (ite (= V0 V__fml:rm) false (__working V0)))) (forall ((V0 resource_manager)) (= (prepared V0) (ite (= V0 V__fml:rm) false (__prepared V0)))) (forall ((V0 resource_manager)) (= (committed V0) (ite (= V0 V__fml:rm) false (__committed V0)))) (forall ((V0 resource_manager)) (= (aborted V0) (ite (= V0 V__fml:rm) true (__aborted V0)))) (or (__working V__fml:rm) (__prepared V__fml:rm)) (forall ((R resource_manager)) (not (__committed R)))))
+ ))
+ (and $v))
+ :action ext:decide_abort))
+
+(define-fun .action_ext:prepare () Bool (! 
+ (let (($v (exists ((V__fml:rm resource_manager)) (and (forall ((V0 resource_manager)) (= (working V0) (ite (= V0 V__fml:rm) false (__working V0)))) (forall ((V0 resource_manager)) (= (prepared V0) (ite (= V0 V__fml:rm) true (__prepared V0)))) (forall ((V0 resource_manager)) (= (committed V0) (ite (= V0 V__fml:rm) false (__committed V0)))) (forall ((V0 resource_manager)) (= (aborted V0) (ite (= V0 V__fml:rm) false (__aborted V0)))) (__working V__fml:rm)))
+ ))
+ (and $v))
+ :action ext:prepare))
+
+(define-fun .action_ext:decide_commit () Bool (! 
+ (let (($v (exists ((V__fml:rm resource_manager)) (and (forall ((V0 resource_manager)) (= (working V0) (ite (= V0 V__fml:rm) false (__working V0)))) (forall ((V0 resource_manager)) (= (prepared V0) (ite (= V0 V__fml:rm) false (__prepared V0)))) (forall ((V0 resource_manager)) (= (committed V0) (ite (= V0 V__fml:rm) true (__committed V0)))) (forall ((V0 resource_manager)) (= (aborted V0) (ite (= V0 V__fml:rm) false (__aborted V0)))) (__prepared V__fml:rm) (forall ((R resource_manager)) (or (__prepared R) (__committed R)))))
+ ))
+ (and $v))
+ :action ext:decide_commit))
+

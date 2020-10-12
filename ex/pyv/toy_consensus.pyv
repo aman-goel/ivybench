@@ -1,0 +1,24 @@
+sort node
+sort value
+sort quorum
+
+immutable relation member(node, quorum)
+axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)
+
+mutable relation vote(node, value)
+mutable relation decision(value)
+
+init !vote(N, V)
+init !decision(V)
+
+transition cast_vote(n: node, v: value)
+   modifies vote
+   & (forall V. !old(vote(n,V)))
+   & (vote(N, V) <-> old(vote(N, V)) | N = n & V = v)
+
+transition decide(v: value, q: quorum)
+  modifies decision
+  & old(member(N,q) -> vote(N,v))
+  & (decision(V) <-> (old(decision(V)) | V=v))
+
+safety decision(V1) & decision(V2) -> V1 = V2

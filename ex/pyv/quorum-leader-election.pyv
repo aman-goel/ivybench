@@ -1,0 +1,27 @@
+sort node
+sort nset
+
+mutable relation isleader(node)
+mutable relation voted(node, node)
+immutable relation member(node, nset)
+immutable relation majority(nset)
+mutable constant quorum: nset
+
+axiom majority(S) & majority(Y) -> exists N . member(N, S) & member(N, T)
+
+init !voted(N, M)
+init !isleader(N)
+
+transition vote(v : node , n : node)
+  modifies voted
+    & (forall M:node . !old(voted(v, M)))
+    & (voted(V, N) <-> (old(voted(V, N)) | (V = v & N = n)))
+
+transition become_leader(n : node , s : nset)
+  modifies isleader, quorum
+    & old(majority(s))
+    & (forall M:node . member(M, s) -> old(voted(M, n)))
+    & (isleader(N) <-> (old(isleader(N)) | (N = n)))
+    & (quorum = s)
+
+safety (isleader(N) & isleader(M)) -> N = M

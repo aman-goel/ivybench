@@ -1,0 +1,163 @@
+#lang ivy1.7
+
+#
+# An Ivy model of the toy lock example from https://github.com/Microsoft/Ironclad/blob/master/ironfleet/src/Dafny/Distributed/Protocol/Lock/Node.i.dfy
+#
+# For a description of the protocol, see the IronFleet paper
+# (https://www.microsoft.com/en-us/research/wp-content/uploads/2015/10/ironfleet.pdf),
+# Figure 4
+#
+# New property defined: If a node holds the lock, then its epoch is the highest.
+# Modification: Got rid of first non-zero epoch (since not necessary).
+
+# A total order helper module
+module total_order(r) = {
+    axiom r(X,X)                        # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+################################################################################
+#
+# Types, relations and functions describing state of the network
+#
+################################################################################
+
+type node
+type epoch
+
+# epochs are totally ordered with a least element called zero
+relation le(X:epoch, Y:epoch)
+instantiate total_order(le)
+individual zero:epoch
+axiom le(zero, X)
+
+function ep(N:node) : epoch # ep(n) is the current epoch of node n
+
+relation held(N:node) # held(n) is true iff the lock is currently held by node n
+
+# transfer messages
+relation transfer(E:epoch, N:node)  # the node is the message destination
+
+# locked messages
+relation locked(E:epoch, N:node)  # the node is the message source
+
+################################################################################
+#
+# Protocol description
+#
+################################################################################
+individual first:node
+
+after init {
+    # initially exactly one node holds the lock, and everyone has epoch zero
+    held(X) := X=first;
+    ep(N) := zero;
+    transfer(E, N) := false;
+    locked(E, N) := false;
+}
+
+action grant(n1:node, n2:node, e:epoch) = {
+    # release the lock and send a transfer message
+    require held(n1);
+    require ~le(e, ep(n1));   # jump to some strictly higher epoch
+    transfer(e, n2) := true;
+    held(n1) := false;
+}
+
+action accept(n:node, e:epoch) = {
+    # receive a transfer message and take the lock, sending a locked message
+    require transfer(e,n);
+    transfer(e,n) := *;
+    if ~le(e, ep(n)) {
+        held(n) := true;
+        ep(n) := e;
+        locked(e, n) := true;
+    };
+}
+
+export grant
+export accept
+
+# the safety property
+invariant held(N1) -> le(ep(N2), ep(N1))
+
+####################################################################################
+#
+# Predicates that encode the enabling conditions of the protocol actions.
+# These predicates allow the construction of an predicate abstraction of the
+# protocol actions parameterized by its types (nodes and epochs).  
+
+####################################################################################
+# predicate g(I) is the enabling condition for the grant action of node I 
+relation g(I:node)
+definition g(I) = (held(I))
+
+# predicate a(I, X) is the enabling condition for the accept action of node I at epoch X
+relation a(I:node, X:epoch)
+definition a(I, X) = (~le(X, ep(I)) & transfer(X, I))
+####################################################################################
+
+####################################################################################
+# Predicates that encode the constraints of forward reachability, i.e.,
+# the Boolean combinations of action enabling conditions that are reachable from the
+# specified initial state(s). These are inferred from performing forward image
+# computation on the predicate abstraction of the protocol's action . Assuming that the
+# protocol can be verified using a finite instance of just n nodes (for this protocol
+# n = 2), the size of this abstract space is 2^{#actions} x 2^{n}. The sparsity of action
+# updates (i.e., that an action changes only a small number of state variables) ensures
+# that the spatially-reachable action combinations are much smaller than the total size
+# of the abstract state space.
+# These predicates are found by solving for a minimal expression of the reachable action combinations using a logic minimizer (e.g., espresso)
+####################################################################################
+
+# Predicate gg ensures that only one node can be granting
+relation gg
+definition gg = (forall I:node, J:node. g(I) & g(J) -> (I = J))
+
+# Predicate aa ensures that only one node can be accepting
+relation aa
+definition aa = (forall I:node, J:node, X:epoch, Y:epoch. a(I, X) & a(J, Y) -> (I = J) & (X = Y))
+
+# Predicate ga ensures that simultaneous granting and accepting actions cannot occur 
+relation ga
+definition ga = (forall I:node, J:node, X:epoch. ~(g(I) & a(J, X)))
+
+####################################################################################
+#
+# Predicates that encode the constraints of "temporal" reachability. The abstraction of protocol actions is
+# an over-approximation that does not account for the temporal
+# relations involving the state variables that depend on the totally-ordered epoch
+# parameter of the protocol; these include ep, transfer, and locked.
+#
+# These constraints must be derived by performing a symbolic analysis 
+# to determine the implications of the reachable action combinations
+# on the temporal state variables.
+#
+# Alternatively, IC3-style incremental induction can be performed from each of the
+# abstract states encoding a reachable action combination.
+#
+####################################################################################
+
+relation g_implications
+definition g_implications =
+	(forall I:node, J:node, X:epoch. g(I) -> 
+		le(ep(J), ep(I)) &				# granting node must have highest epoch
+		(~le(X, ep(I)) ->				# transfer and locked must be false
+			~transfer(X, J) & ~locked(X, J)) &	# at all future epoch for all nodes
+		(locked(ep(I), J) -> (I = J))			# only node I can lock at its own epoch 	
+	)
+relation a_implications
+definition a_implications =
+	(forall I:node, J:node, X:epoch, Y:epoch. a(I, X) ->
+		~le(X, ep(J)) &						# accepting node must have highest epoch
+		(le(X, Y) -> ~locked(Y, J))				# no other node can lock at a higher epoch
+	)
+
+####################################################################################
+#
+# Strengthening assertion is the conjunction of the reachable action combinations and their temporal implications.
+#
+####################################################################################
+invariant [manual_1] gg & aa & ga & g_implications & a_implications

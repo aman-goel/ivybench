@@ -1,0 +1,50 @@
+(declare-sort node 0)
+(declare-sort key 0)
+(declare-sort value 0)
+
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .key ((S key)) key (! S :sort 2))
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __owner (node key) Bool)
+(declare-fun __transfer_msg (node key value) Bool)
+(declare-fun __table (node key value) Bool)
+
+(declare-fun owner (node key) Bool)
+(declare-fun transfer_msg (node key value) Bool)
+(declare-fun table (node key value) Bool)
+
+(define-fun .owner ((V0 node) (V1 key)) Bool (! (__owner V0 V1) :next owner))
+(define-fun .transfer_msg ((V0 node) (V1 key) (V2 value)) Bool (! (__transfer_msg V0 V1 V2) :next transfer_msg))
+(define-fun .table ((V0 node) (V1 key) (V2 value)) Bool (! (__table V0 V1 V2) :next table))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((K key) (N1 node) (N2 node) (V1 value) (V2 value)) (=> (and (__table N1 K V1) (__table N2 K V2)) (and (= N1 N2) (= V1 V2))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 key) (V2 value)) (= (__table V0 V1 V2) false)) (forall ((V0 node) (V1 key) (V2 value)) (= (__transfer_msg V0 V1 V2) false)) (forall ((K key) (N1 node) (N2 node)) (=> (and (__owner N1 K) (__owner N2 K)) (= N1 N2))))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:recv_transfer_msg () Bool (! 
+ (let (($v (exists ((V__fml:k key) (V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 key) (V2 value)) (= (transfer_msg V0 V1 V2) (ite (and (= V0 V__fml:n) (= V1 V__fml:k) (= V2 V__fml:v)) false (__transfer_msg V0 V1 V2)))) (forall ((V0 node) (V1 key) (V2 value)) (= (table V0 V1 V2) (ite (and (= V0 V__fml:n) (= V1 V__fml:k) (= V2 V__fml:v)) true (__table V0 V1 V2)))) (forall ((V0 node) (V1 key)) (= (owner V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:k)) true (__owner V0 V1)))) (__transfer_msg V__fml:n V__fml:k V__fml:v)))
+ ))
+ (and $v))
+ :action ext:recv_transfer_msg))
+
+(define-fun .action_ext:put () Bool (! 
+ (let (($v (exists ((V__fml:k key) (V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 key) (V2 value)) (= (table V0 V1 V2) (ite (and (= V0 V__fml:n) (= V1 V__fml:k)) (= V2 V__fml:v) (__table V0 V1 V2)))) (__owner V__fml:n V__fml:k)))
+ ))
+ (and $v))
+ :action ext:put))
+
+(define-fun .action_ext:reshard () Bool (! 
+ (let (($v (exists ((V__fml:k key) (V__fml:n_new node) (V__fml:n_old node) (V__fml:v value)) (and (forall ((V0 node) (V1 key) (V2 value)) (= (table V0 V1 V2) (ite (and (= V0 V__fml:n_old) (= V1 V__fml:k) (= V2 V__fml:v)) false (__table V0 V1 V2)))) (forall ((V0 node) (V1 key)) (= (owner V0 V1) (ite (and (= V0 V__fml:n_old) (= V1 V__fml:k)) false (__owner V0 V1)))) (forall ((V0 node) (V1 key) (V2 value)) (= (transfer_msg V0 V1 V2) (ite (and (= V0 V__fml:n_new) (= V1 V__fml:k) (= V2 V__fml:v)) true (__transfer_msg V0 V1 V2)))) (__table V__fml:n_old V__fml:k V__fml:v)))
+ ))
+ (and $v))
+ :action ext:reshard))
+

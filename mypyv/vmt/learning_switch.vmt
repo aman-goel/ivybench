@@ -1,0 +1,40 @@
+(declare-sort node 0)
+
+(define-fun .node ((S node)) node (! S :sort 2))
+
+(declare-fun __table (node node node) Bool)
+(declare-fun __pending (node node node node) Bool)
+
+(declare-fun table (node node node) Bool)
+(declare-fun pending (node node node node) Bool)
+
+(define-fun .table ((V0 node) (V1 node) (V2 node)) Bool (! (__table V0 V1 V2) :next table))
+(define-fun .pending ((V0 node) (V1 node) (V2 node) (V3 node)) Bool (! (__pending V0 V1 V2 V3) :next pending))
+
+(declare-fun __ts0_a () Bool)
+(declare-fun __m_pending (node node node node) Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (and (forall ((T node) (X node)) (__table T X X)) (forall ((T node) (X node) (Y node) (Z node)) (=> (and (__table T X Y) (__table T Y Z)) (__table T X Z))) (forall ((T node) (X node) (Y node)) (=> (and (__table T X Y) (__table T Y X)) (= X Y))) (forall ((T node) (X node) (Y node) (Z node)) (=> (and (__table T X Y) (__table T X Z)) (or (__table T Y Z) (__table T Z Y)))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 node) (V2 node)) (= (__table V0 V1 V2) (= V1 V2))) (forall ((V0 node) (V1 node) (V2 node) (V3 node)) (= (__pending V0 V1 V2 V3) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:new_packet () Bool (! 
+ (let (($v (exists ((V__fml:pd node) (V__fml:ps node)) (forall ((V0 node) (V1 node) (V2 node) (V3 node)) (= (pending V0 V1 V2 V3) (ite (and (= V0 V__fml:ps) (= V1 V__fml:pd) (= V2 V__fml:ps) (= V3 V__fml:ps)) true (__pending V0 V1 V2 V3)))))
+ ))
+ (and $v))
+ :action ext:new_packet))
+
+(define-fun .action_ext:forward () Bool (! 
+ (let (($v (exists ((V__fml:nondet node) (V__fml:pd node) (V__fml:ps node) (V__fml:sw0 node) (V__fml:sw1 node)) (and (forall ((V0 node) (V1 node) (V2 node) (V3 node)) (= (__m_pending V0 V1 V2 V3) (and (__pending V0 V1 V2 V3) (= V0 V__fml:nondet)))) (forall ((V0 node) (V1 node) (V2 node) (V3 node)) (= (pending V0 V1 V2 V3) (ite (and (= V0 V__fml:ps) (= V1 V__fml:pd) (= V2 V__fml:sw1)) true (__m_pending V0 V1 V2 V3)))) (forall ((V0 node) (V1 node) (V2 node)) (= (table V0 V1 V2) (ite __ts0_a (ite (= V0 V__fml:ps) (or (__table V__fml:ps V1 V2) (and (__table V__fml:ps V1 V__fml:sw1) (__table V__fml:ps V__fml:sw0 V2))) (__table V0 V1 V2)) (__table V0 V1 V2)))) (= __ts0_a (and (not (= V__fml:ps V__fml:sw1)) (forall ((W node)) (=> (not (= W V__fml:sw1)) (not (__table V__fml:ps V__fml:sw1 W)))))) (__pending V__fml:ps V__fml:pd V__fml:sw0 V__fml:sw1)))
+ ))
+ (and $v))
+ :action ext:forward))
+

@@ -1,0 +1,31 @@
+sort acceptor
+sort quorum
+sort proposer
+
+immutable relation member(acceptor, quorum)
+axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+mutable relation start(proposer)
+mutable relation promise(acceptor, proposer)
+mutable relation leader(proposer)
+
+init !start(P)
+init !promise(A, P)
+init !leader(P)
+
+transition send_1a(p: proposer)
+  modifies start
+    & (start(P) <-> (old(start(P)) | (P = p)))
+
+transition send_1b(a: acceptor, p: proposer)
+  modifies promise
+    & old(start(p))
+    & (forall P. !old(promise(a, P)))
+    & (promise(A, P) <-> (old(promise(A, P)) | (A = a & P = p)))
+
+transition decide(p: proposer, q: quorum)
+  modifies leader
+    & (forall A. member(A, q) -> old(promise(A, p)))
+    & (leader(P) <-> (old(leader(P)) | (P = p)))
+
+safety leader(P1) & leader(P2) -> P1 = P2

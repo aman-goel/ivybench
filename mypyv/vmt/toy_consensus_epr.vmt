@@ -1,0 +1,54 @@
+(declare-sort quorum 0)
+(declare-sort node 0)
+(declare-sort value 0)
+
+(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __voted (node) Bool)
+(declare-fun __vote (node value) Bool)
+(declare-fun __decided (value) Bool)
+
+(declare-fun voted (node) Bool)
+(declare-fun vote (node value) Bool)
+(declare-fun decided (value) Bool)
+
+(define-fun .voted ((V0 node)) Bool (! (__voted V0) :next voted))
+(define-fun .vote ((V0 node) (V1 value)) Bool (! (__vote V0 V1) :next vote))
+(define-fun .decided ((V0 value)) Bool (! (__decided V0) :next decided))
+
+(declare-fun member (node quorum) Bool)
+
+(define-fun .member ((V0 node) (V1 quorum)) Bool (! (member V0 V1) :global true))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((V1 value) (V2 value)) (=> (and (__decided V1) (__decided V2)) (= V1 V2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (forall ((Q1 quorum) (Q2 quorum)) (exists ((N node)) (and (member N Q1) (member N Q2))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node)) (= (__voted V0) false)) (forall ((V0 node) (V1 value)) (= (__vote V0 V1) false)) (forall ((V0 value)) (= (__decided V0) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:cast_vote () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 value)) (= (vote V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:v)) true (__vote V0 V1)))) (forall ((V0 node)) (= (voted V0) (ite (= V0 V__fml:n) true (__voted V0)))) (not (__voted V__fml:n))))
+ ))
+ (and $v))
+ :action ext:cast_vote))
+
+(define-fun .action_ext:decide () Bool (! 
+ (let (($v (exists ((V__fml:q quorum) (V__fml:v value)) (and (forall ((V0 value)) (= (decided V0) (ite (= V0 V__fml:v) true (__decided V0)))) (forall ((N node)) (=> (member N V__fml:q) (__vote N V__fml:v)))))
+ ))
+ (and $v))
+ :action ext:decide))
+

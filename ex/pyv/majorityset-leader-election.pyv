@@ -1,0 +1,38 @@
+sort node
+sort nodeset
+
+immutable relation member(node, nodeset)
+immutable relation majority(nodeset)
+axiom forall S1:nodeset, S2:nodeset. majority(S1) & majority(S2) -> exists N. member(N,S1) & member(N,S2)
+immutable constant emptyset : nodeset
+axiom forall N. !member(N, emptyset)
+
+mutable relation vote(node, node)
+mutable relation leader(node)
+mutable relation voters(node, nodeset)
+
+init !vote(X,Y)
+init !leader(X)
+init (voters(X,Y) <-> (Y = emptyset))
+
+transition voting(n1:node, n2:node)
+  modifies vote
+    & (forall Y. !old(vote(n1, Y)))
+    & (vote(N1, N2) <-> (old(vote(N1, N2)) | (N1 = n1 & N2 = n2)))
+
+transition receive_vote(voter:node, n:node, vs:nodeset, vs_new:nodeset)
+  modifies voters
+    & old(vote(voter, n))
+    & old(voters(n,vs))
+    & !member(voter, vs)
+    & (forall N. member(N,vs_new) <-> (member(N, vs) | N=old(voter)))
+	& (majority(vs) -> majority(vs_new))
+    & (voters(N, VS) <-> (N != n & old(voters(N, VS))) | (N = n & (VS = vs_new)))
+
+transition become_leader(n:node, vs:nodeset)
+  modifies leader
+    & old(voters(n,vs))
+    & majority(vs)
+    & (leader(N) <-> (old(leader(N)) | (N = n)))
+
+safety forall X,Y. leader(X) & leader(Y) -> X=Y

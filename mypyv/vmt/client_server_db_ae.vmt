@@ -1,0 +1,77 @@
+(declare-sort db_request_id 0)
+(declare-sort node 0)
+(declare-sort response 0)
+(declare-sort request 0)
+
+(define-fun .db_request_id ((S db_request_id)) db_request_id (! S :sort 2))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .response ((S response)) response (! S :sort 2))
+(define-fun .request ((S request)) request (! S :sort 2))
+
+(declare-fun __request_sent (node request) Bool)
+(declare-fun __t (db_request_id node) Bool)
+(declare-fun __db_request_sent (db_request_id request) Bool)
+(declare-fun __response_received (node response) Bool)
+(declare-fun __db_response_sent (db_request_id response) Bool)
+(declare-fun __response_sent (node response) Bool)
+
+(declare-fun request_sent (node request) Bool)
+(declare-fun t (db_request_id node) Bool)
+(declare-fun db_request_sent (db_request_id request) Bool)
+(declare-fun response_received (node response) Bool)
+(declare-fun db_response_sent (db_request_id response) Bool)
+(declare-fun response_sent (node response) Bool)
+
+(define-fun .request_sent ((V0 node) (V1 request)) Bool (! (__request_sent V0 V1) :next request_sent))
+(define-fun .t ((V0 db_request_id) (V1 node)) Bool (! (__t V0 V1) :next t))
+(define-fun .db_request_sent ((V0 db_request_id) (V1 request)) Bool (! (__db_request_sent V0 V1) :next db_request_sent))
+(define-fun .response_received ((V0 node) (V1 response)) Bool (! (__response_received V0 V1) :next response_received))
+(define-fun .db_response_sent ((V0 db_request_id) (V1 response)) Bool (! (__db_response_sent V0 V1) :next db_response_sent))
+(define-fun .response_sent ((V0 node) (V1 response)) Bool (! (__response_sent V0 V1) :next response_sent))
+
+(declare-fun match (request response) Bool)
+
+(define-fun .match ((V0 request) (V1 response)) Bool (! (match V0 V1) :global true))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((N node) (P response)) (=> (__response_received N P) (exists ((R request)) (and (__request_sent N R) (match R P)))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 request)) (= (__request_sent V0 V1) false)) (forall ((V0 node) (V1 response)) (= (__response_sent V0 V1) false)) (forall ((V0 node) (V1 response)) (= (__response_received V0 V1) false)) (forall ((V0 db_request_id) (V1 request)) (= (__db_request_sent V0 V1) false)) (forall ((V0 db_request_id) (V1 response)) (= (__db_response_sent V0 V1) false)) (forall ((V0 db_request_id) (V1 node)) (= (__t V0 V1) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:receive_response () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:p response)) (and (forall ((V0 node) (V1 response)) (= (response_received V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:p)) true (__response_received V0 V1)))) (__response_sent V__fml:n V__fml:p)))
+ ))
+ (and $v))
+ :action ext:receive_response))
+
+(define-fun .action_ext:new_request () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:r request)) (forall ((V0 node) (V1 request)) (= (request_sent V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:r)) true (__request_sent V0 V1)))))
+ ))
+ (and $v))
+ :action ext:new_request))
+
+(define-fun .action_ext:server_process_db_response () Bool (! 
+ (let (($v (exists ((V__fml:i db_request_id) (V__fml:n node) (V__fml:p response)) (and (forall ((V0 node) (V1 response)) (= (response_sent V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:p)) true (__response_sent V0 V1)))) (__db_response_sent V__fml:i V__fml:p) (__t V__fml:i V__fml:n)))
+ ))
+ (and $v))
+ :action ext:server_process_db_response))
+
+(define-fun .action_ext:server_process_request () Bool (! 
+ (let (($v (exists ((V__fml:i db_request_id) (V__fml:n node) (V__fml:r request)) (and (forall ((V0 db_request_id) (V1 node)) (= (t V0 V1) (ite (and (= V0 V__fml:i) (= V1 V__fml:n)) true (__t V0 V1)))) (forall ((V0 db_request_id) (V1 request)) (= (db_request_sent V0 V1) (ite (and (= V0 V__fml:i) (= V1 V__fml:r)) true (__db_request_sent V0 V1)))) (__request_sent V__fml:n V__fml:r) (forall ((N node)) (not (__t V__fml:i N)))))
+ ))
+ (and $v))
+ :action ext:server_process_request))
+
+(define-fun .action_ext:db_process_request () Bool (! 
+ (let (($v (exists ((V__fml:i db_request_id) (V__fml:p response) (V__fml:r request)) (and (forall ((V0 db_request_id) (V1 response)) (= (db_response_sent V0 V1) (ite (and (= V0 V__fml:i) (= V1 V__fml:p)) true (__db_response_sent V0 V1)))) (__db_request_sent V__fml:i V__fml:r) (match V__fml:r V__fml:p)))
+ ))
+ (and $v))
+ :action ext:db_process_request))
+

@@ -1,0 +1,65 @@
+(declare-sort node 0)
+(declare-sort packet 0)
+
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .packet ((S packet)) packet (! S :sort 1))
+
+(declare-fun __route_dom (node node) Bool)
+(declare-fun __pending (packet node node) Bool)
+(declare-fun __route_tc (node node node) Bool)
+
+(declare-fun route_dom (node node) Bool)
+(declare-fun pending (packet node node) Bool)
+(declare-fun route_tc (node node node) Bool)
+
+(define-fun .route_dom ((V0 node) (V1 node)) Bool (! (__route_dom V0 V1) :next route_dom))
+(define-fun .pending ((V0 packet) (V1 node) (V2 node)) Bool (! (__pending V0 V1 V2) :next pending))
+(define-fun .route_tc ((V0 node) (V1 node) (V2 node)) Bool (! (__route_tc V0 V1 V2) :next route_tc))
+
+(declare-fun dst (packet) node)
+(declare-fun link (node node) Bool)
+(declare-fun src (packet) node)
+
+(define-fun .dst ((V0 packet)) node (! (dst V0) :global true))
+(define-fun .link ((V0 node) (V1 node)) Bool (! (link V0 V1) :global true))
+(define-fun .src ((V0 packet)) node (! (src V0) :global true))
+
+(declare-fun __ts0_a_a () Bool)
+(declare-fun __ts0_a () Bool)
+
+(define-fun .prop () Bool (! 
+ (let (($v (and (forall ((N node) (X node)) (__route_tc N X X)) (forall ((N node) (X node) (Y node) (Z node)) (=> (and (__route_tc N X Y) (__route_tc N Y Z)) (__route_tc N X Z))) (forall ((N node) (X node) (Y node)) (=> (and (__route_tc N X Y) (__route_tc N Y X)) (= X Y))) (forall ((N node) (X node) (Y node) (Z node)) (=> (and (__route_tc N X Y) (__route_tc N X Z)) (or (__route_tc N Y Z) (__route_tc N Z Y)))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X node)) (not (link X X))) (forall ((X node) (Y node)) (or (not (link X Y)) (link Y X))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 node) (V1 node)) (= (__route_dom V0 V1) false)) (forall ((V0 node) (V1 node) (V2 node)) (= (__route_tc V0 V1 V2) (= V1 V2))) (forall ((V0 packet) (V1 node) (V2 node)) (= (__pending V0 V1 V2) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:new_packet () Bool (! 
+ (let (($v (exists ((V__fml:p packet)) (forall ((V0 packet) (V1 node) (V2 node)) (= (pending V0 V1 V2) (ite (and (= V0 V__fml:p) (= V1 (src V__fml:p)) (= V2 (src V__fml:p))) true (__pending V0 V1 V2)))))
+ ))
+ (and $v))
+ :action ext:new_packet))
+
+(define-fun .action_ext:flood () Bool (! 
+ (let (($v (exists ((V__fml:p packet) (V__fml:sw0 node) (V__fml:sw1 node)) (and (forall ((V0 node) (V1 node) (V2 node)) (= (route_tc V0 V1 V2) (ite __ts0_a (ite (= V0 (src V__fml:p)) (or (__route_tc (src V__fml:p) V1 V2) (and (__route_tc (src V__fml:p) V1 V__fml:sw1) (__route_tc (src V__fml:p) V__fml:sw0 V2))) (__route_tc V0 V1 V2)) (__route_tc V0 V1 V2)))) (forall ((V0 node) (V1 node)) (= (route_dom V0 V1) (ite __ts0_a (ite (and (= V0 (src V__fml:p)) (= V1 V__fml:sw1)) true (__route_dom V0 V1)) (__route_dom V0 V1)))) (= __ts0_a (and (not (__route_dom (src V__fml:p) V__fml:sw1)) (not (= (src V__fml:p) V__fml:sw1)))) (forall ((V0 packet) (V1 node) (V2 node)) (= (pending V0 V1 V2) (ite __ts0_a_a (ite (and (= V0 V__fml:p) (= V1 V__fml:sw1)) (and (link V__fml:sw1 V2) (not (= V2 V__fml:sw0))) (__pending V0 V1 V2)) (__pending V0 V1 V2)))) (= __ts0_a_a (not (= (dst V__fml:p) V__fml:sw1))) (__pending V__fml:p V__fml:sw0 V__fml:sw1) (not (__route_dom (dst V__fml:p) V__fml:sw1))))
+ ))
+ (and $v))
+ :action ext:flood))
+
+(define-fun .action_ext:route () Bool (! 
+ (let (($v (exists ((V__fml:p packet) (V__fml:sw0 node) (V__fml:sw1 node) (V__fml:sw2 node)) (and (forall ((V0 node) (V1 node) (V2 node)) (= (route_tc V0 V1 V2) (ite __ts0_a (ite (= V0 (src V__fml:p)) (or (__route_tc (src V__fml:p) V1 V2) (and (__route_tc (src V__fml:p) V1 V__fml:sw1) (__route_tc (src V__fml:p) V__fml:sw0 V2))) (__route_tc V0 V1 V2)) (__route_tc V0 V1 V2)))) (forall ((V0 node) (V1 node)) (= (route_dom V0 V1) (ite __ts0_a (ite (and (= V0 (src V__fml:p)) (= V1 V__fml:sw1)) true (__route_dom V0 V1)) (__route_dom V0 V1)))) (= __ts0_a (and (not (__route_dom (src V__fml:p) V__fml:sw1)) (not (= (src V__fml:p) V__fml:sw1)))) (forall ((V0 packet) (V1 node) (V2 node)) (= (pending V0 V1 V2) (ite __ts0_a_a (ite (and (= V0 V__fml:p) (= V1 V__fml:sw1) (= V2 V__fml:sw2)) true (__pending V0 V1 V2)) (__pending V0 V1 V2)))) (= __ts0_a_a (not (= (dst V__fml:p) V__fml:sw1))) (__pending V__fml:p V__fml:sw0 V__fml:sw1) (__route_dom (dst V__fml:p) V__fml:sw1) (__route_tc (dst V__fml:p) V__fml:sw1 V__fml:sw2) (not (= V__fml:sw1 V__fml:sw2)) (forall ((Z node)) (=> (and (__route_tc (dst V__fml:p) V__fml:sw1 Z) (not (= V__fml:sw1 Z))) (__route_tc (dst V__fml:p) V__fml:sw2 Z)))))
+ ))
+ (and $v))
+ :action ext:route))
+
