@@ -62,23 +62,23 @@ export recv_unlock
 invariant holds_lock(X) & holds_lock(Y) -> X = Y
 
 #invariant [manual_1] (
-    ~held &
-    (forall N. ~grant_msg(N)) &
-    (forall N. ~holds_lock(N)) &
-    (forall N. ~unlock_msg(N))
-) | (
-    held &
-    (forall N1, N2. grant_msg(N1) & grant_msg(N2) -> N1 = N2) &
-    (forall N. ~holds_lock(N)) &
-    (forall N. ~unlock_msg(N))
-) | (
-    held &
-    (forall N. ~grant_msg(N)) &
-    (forall N1, N2. holds_lock(N1) & holds_lock(N2) -> N1 = N2) &
-    (forall N. ~unlock_msg(N))
-) | (
-    held &
-    (forall N. ~grant_msg(N)) &
-    (forall N. ~holds_lock(N)) &
-    (forall N1, N2. unlock_msg(N1) & unlock_msg(N2) -> N1 = N2)
-)
+#    ~held &
+#    (forall N. ~grant_msg(N)) &
+#    (forall N. ~holds_lock(N)) &
+#    (forall N. ~unlock_msg(N))
+#) | (
+#    held &
+#    (forall N1, N2. grant_msg(N1) & grant_msg(N2) -> N1 = N2) &
+#    (forall N. ~holds_lock(N)) &
+#    (forall N. ~unlock_msg(N))
+#) | (
+#    held &
+#    (forall N. ~grant_msg(N)) &
+#    (forall N1, N2. holds_lock(N1) & holds_lock(N2) -> N1 = N2) &
+#    (forall N. ~unlock_msg(N))
+#) | (
+#    held &
+#    (forall N. ~grant_msg(N)) &
+#    (forall N. ~holds_lock(N)) &
+#    (forall N1, N2. unlock_msg(N1) & unlock_msg(N2) -> N1 = N2)
+#)
