@@ -46,6 +46,6 @@ export release_lock
 
 invariant ~(X ~= Y & has_lock(X) & has_lock(Y))
 
-invariant [manual_1] ~(X ~= Y & ( has_lock(X) | (msg(X, T) & ~le(T, epoch(X))) ) & ( has_lock(Y) | (msg(Y, S) & ~le(S, epoch(Y))) ))
-invariant [manual_2] ~(has_lock(X) & (msg(X, T) & ~le(T, epoch(X))))
-invariant [manual_3] ~(S ~= T & msg(Y, S) & msg(Y, T) & ~le(T, epoch(Y)) & ~le(S, epoch(Y)))
+#invariant [manual_1] ~(X ~= Y & ( has_lock(X) | (msg(X, T) & ~le(T, epoch(X))) ) & ( has_lock(Y) | (msg(Y, S) & ~le(S, epoch(Y))) ))
+#invariant [manual_2] ~(has_lock(X) & (msg(X, T) & ~le(T, epoch(X))))
+#invariant [manual_3] ~(S ~= T & msg(Y, S) & msg(Y, T) & ~le(T, epoch(Y)) & ~le(S, epoch(Y)))

@@ -99,15 +99,15 @@ export rMRcvAbortMsg
 
 invariant [safety] (forall R1, R2. ~(aborted(R1) & committed(R2)) )
 
-invariant [manual_1] forall R:resource_manager. working(R) | prepared(R) | committed(R) | aborted(R)
-invariant [manual_2] tm_init | tm_committed | tm_aborted
-invariant [manual_3] forall R:resource_manager. tm_committed -> tm_prepared(R)
-invariant [manual_4] msg_commit -> tm_committed
-invariant [manual_5] msg_abort -> tm_aborted
-invariant [manual_6] forall R:resource_manager. tm_prepared(R) -> msg_prepared(R)
-invariant [manual_7] forall R:resource_manager. msg_prepared(R) -> (~working(R) & (aborted(R) -> msg_abort))
-invariant [manual_8] forall R:resource_manager. committed(R) -> msg_commit
+#invariant [manual_1] forall R:resource_manager. working(R) | prepared(R) | committed(R) | aborted(R)
+#invariant [manual_2] tm_init | tm_committed | tm_aborted
+#invariant [manual_3] forall R:resource_manager. tm_committed -> tm_prepared(R)
+#invariant [manual_4] msg_commit -> tm_committed
+#invariant [manual_5] msg_abort -> tm_aborted
+#invariant [manual_6] forall R:resource_manager. tm_prepared(R) -> msg_prepared(R)
+#invariant [manual_7] forall R:resource_manager. msg_prepared(R) -> (~working(R) & (aborted(R) -> msg_abort))
+#invariant [manual_8] forall R:resource_manager. committed(R) -> msg_commit
 
-invariant [manual_ic3po9]	(tm_committed -> ~tm_init)
-invariant [manual_ic3po10]	(tm_init -> ~msg_abort)
-invariant [manual_ic3po11]	(tm_committed -> ~tm_aborted)
+#invariant [manual_ic3po9]	(tm_committed -> ~tm_init)
+#invariant [manual_ic3po10]	(tm_init -> ~msg_abort)
+#invariant [manual_ic3po11]	(tm_committed -> ~tm_aborted)

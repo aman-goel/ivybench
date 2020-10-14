@@ -72,9 +72,9 @@ export decide
 # safety property:
 invariant [safety] decided(N1, V1) & decided(N2, V2) -> V1 = V2
 
-invariant [manual_1] leader(N1) & leader(N2) -> N1 = N2
-invariant [manual_2] votes(N, N1) -> vote_msg(N1, N)
-invariant [manual_3] vote_msg(N, N1) & vote_msg(N, N2) -> N1 = N2
-invariant [manual_4] vote_msg(N, N1) -> voted(N)
-invariant [manual_5] leader(N) & member(N1, voting_quorum) -> votes(N, N1)
-invariant [manual_6] decided(N, V) -> leader(N)
+#invariant [manual_1] leader(N1) & leader(N2) -> N1 = N2
+#invariant [manual_2] votes(N, N1) -> vote_msg(N1, N)
+#invariant [manual_3] vote_msg(N, N1) & vote_msg(N, N2) -> N1 = N2
+#invariant [manual_4] vote_msg(N, N1) -> voted(N)
+#invariant [manual_5] leader(N) & member(N1, voting_quorum) -> votes(N, N1)
+#invariant [manual_6] decided(N, V) -> leader(N)

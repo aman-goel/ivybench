@@ -192,10 +192,10 @@ invariant [1000000] (~(TX1 ~= TX2 &
 	    ~le(TX1, T3)))
         & ((commit_tx(T) & op_in_tx(T, O) & op_node(O, N)) -> precommit_tx(T, N))   # Safety: Atomicity
 
-invariant [manual_1] depends_tx(T1, K, T2) -> (le(T2, T1) & (T1 ~= T2 | T1 = zero))
-invariant [manual_2] ~abort_tx(Tx) | ~commit_tx(Tx) # Abort and commit are disjoint
-invariant [manual_3] (~precommit_tx(T, N) & ~abort_tx(T) & node_for_key(K, N)) -> ~write_tx(T, K)
-invariant [manual_4] (~precommit_tx(T, N) & ~abort_tx(T) & node_for_key(K, N)) -> ~depends_tx(T, K, T2)
-invariant [manual_5] commit_tx(zero)
-invariant [manual_6] ~(~read_tx(T1, K0) & depends_tx(T1, K0, T0))
-invariant [manual_7] ~(T0 ~= T2 & le(T0, T1) & le(T2, T0) & (~abort_tx(T0)) & (~abort_tx(T1))& depends_tx(T1, K0, T2) & write_tx(T0, K0))
+#invariant [manual_1] depends_tx(T1, K, T2) -> (le(T2, T1) & (T1 ~= T2 | T1 = zero))
+#invariant [manual_2] ~abort_tx(Tx) | ~commit_tx(Tx) # Abort and commit are disjoint
+#invariant [manual_3] (~precommit_tx(T, N) & ~abort_tx(T) & node_for_key(K, N)) -> ~write_tx(T, K)
+#invariant [manual_4] (~precommit_tx(T, N) & ~abort_tx(T) & node_for_key(K, N)) -> ~depends_tx(T, K, T2)
+#invariant [manual_5] commit_tx(zero)
+#invariant [manual_6] ~(~read_tx(T1, K0) & depends_tx(T1, K0, T0))
+#invariant [manual_7] ~(T0 ~= T2 & le(T0, T1) & le(T2, T0) & (~abort_tx(T0)) & (~abort_tx(T1))& depends_tx(T1, K0, T2) & write_tx(T0, K0))

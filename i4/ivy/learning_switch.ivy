@@ -150,7 +150,7 @@ export route
 
 invariant [1000000] route_tc(N, X, X) & (route_tc(N, X, Y) & route_tc(N, Y, Z) -> route_tc(N, X, Z)) & (route_tc(N, X, Y) & route_tc(N, Y, X) -> X = Y) & (route_tc(N, X, Y) & route_tc(N, X, Z) -> (route_tc(N, Y, Z) | route_tc(N, Z, Y)))
 
-invariant [manual_1] forall A, B . (((A) = (B)) | (~(route_tc(B, B, A))))
-invariant [manual_2] forall A, B . ((route_tc(A, A, B)) | (forall C . ((route_dom(C, A)) | (~(route_tc(C, A, B))))))
-invariant [manual_3] forall C, P . ((route_tc(src(P), C, src(P))) | (route_dom(src(P), C)) | (forall A . (~(pending(P, C, A)))))
-invariant [manual_4] forall B, C . ((route_tc(B, C, B)) | (~(route_dom(B, C))))
+#invariant [manual_1] forall A, B . (((A) = (B)) | (~(route_tc(B, B, A))))
+#invariant [manual_2] forall A, B . ((route_tc(A, A, B)) | (forall C . ((route_dom(C, A)) | (~(route_tc(C, A, B))))))
+#invariant [manual_3] forall C, P . ((route_tc(src(P), C, src(P))) | (route_dom(src(P), C)) | (forall A . (~(pending(P, C, A)))))
+#invariant [manual_4] forall B, C . ((route_tc(B, C, B)) | (~(route_dom(B, C))))

@@ -73,7 +73,7 @@ export receive_response
 
 invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
 
-invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)
-invariant [manual_2] forall I,R. db_request_sent(I,R) -> exists N. t(I,N) & request_sent(N,R)
-invariant [manual_3] forall I,P. db_response_sent(I,P) -> exists R. db_request_sent(I,R) & match(R,P)
-invariant [manual_4] t(I,N1) & t(I,N2) -> N1 = N2
+#invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)
+#invariant [manual_2] forall I,R. db_request_sent(I,R) -> exists N. t(I,N) & request_sent(N,R)
+#invariant [manual_3] forall I,P. db_response_sent(I,P) -> exists R. db_request_sent(I,R) & match(R,P)
+#invariant [manual_4] t(I,N1) & t(I,N2) -> N1 = N2

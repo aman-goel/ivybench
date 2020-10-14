@@ -160,4 +160,4 @@ definition a_implications =
 # Strengthening assertion is the conjunction of the reachable action combinations and their temporal implications.
 #
 ####################################################################################
-invariant [manual_1] gg & aa & ga & g_implications & a_implications
+#invariant [manual_1] gg & aa & ga & g_implications & a_implications

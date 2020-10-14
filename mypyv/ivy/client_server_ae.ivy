@@ -47,4 +47,4 @@ export receive_response
 
 invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
 
-invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)
+#invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)

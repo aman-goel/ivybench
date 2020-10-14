@@ -46,6 +46,6 @@ export decide_abort
 
 invariant [safety] (forall R1, R2. ~(aborted(R1) & committed(R2)) )
 
-invariant [manual_1] forall R:resource_manager. working(R) | prepared(R) | committed(R) | aborted(R)
+#invariant [manual_1] forall R:resource_manager. working(R) | prepared(R) | committed(R) | aborted(R)
 
-invariant [manual_ic3po2]	(forall R0 . (aborted(R0) -> ~prepared(R0)))
+#invariant [manual_ic3po2]	(forall R0 . (aborted(R0) -> ~prepared(R0)))

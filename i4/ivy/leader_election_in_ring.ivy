@@ -128,9 +128,9 @@ export become_leader
 # The safety property:
 invariant [safety] forall X: node, Y:node. leader(X) & leader(Y) -> X = Y  # at most one leader
 
-invariant [manual_1] forall N : node . forall M : node . ~(N ~= M & leader(N) & le(idn(N), idn(M)))
-invariant [manual_2] forall N : node . forall M : node . ~(N ~= M & pending(idn(N), N) & le(idn(N), idn(M)))
-invariant [manual_3] ~(ring.btw(N,M,O) & pending(idn(M),N) & le(idn(M), idn(O)))
-invariant [manual_4] ~(le(idn(Q), idn(P)) & pending(idn(Q),N) & ring.btw(N,Q,P))
-invariant [manual_5] forall N : node . forall M : node . ~(N ~= M & leader(N) & le(idn(N), idn(M))) & ~(ring.btw(N,M,O) & pending(idn(M),N) & le(idn(M), idn(O)))
-invariant [manual_6] ~(~le(idn(P), idn(Q)) & pending(idn(Q),N) & ~pending(idn(Q),P) & ~ring.btw(N,P,Q))
+#invariant [manual_1] forall N : node . forall M : node . ~(N ~= M & leader(N) & le(idn(N), idn(M)))
+#invariant [manual_2] forall N : node . forall M : node . ~(N ~= M & pending(idn(N), N) & le(idn(N), idn(M)))
+#invariant [manual_3] ~(ring.btw(N,M,O) & pending(idn(M),N) & le(idn(M), idn(O)))
+#invariant [manual_4] ~(le(idn(Q), idn(P)) & pending(idn(Q),N) & ring.btw(N,Q,P))
+#invariant [manual_5] forall N : node . forall M : node . ~(N ~= M & leader(N) & le(idn(N), idn(M))) & ~(ring.btw(N,M,O) & pending(idn(M),N) & le(idn(M), idn(O)))
+#invariant [manual_6] ~(~le(idn(P), idn(Q)) & pending(idn(Q),N) & ~pending(idn(Q),P) & ~ring.btw(N,P,Q))

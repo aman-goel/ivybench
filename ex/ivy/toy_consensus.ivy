@@ -33,5 +33,5 @@ export decide
 # safety property:
 invariant decision(V1) & decision(V2) -> V1 = V2
 
-invariant [manual_1] vote(N,V1) & vote(N,V2) -> V1 = V2
-invariant [manual_2] decision(V) -> exists Q:quorum. forall N:node. member(N, Q) -> vote(N,V)
+#invariant [manual_1] vote(N,V1) & vote(N,V2) -> V1 = V2
+#invariant [manual_2] decision(V) -> exists Q:quorum. forall N:node. member(N, Q) -> vote(N,V)

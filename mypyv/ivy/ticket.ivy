@@ -68,16 +68,16 @@ export step31
 # safety property
 invariant [mutex] pc3(T1) & pc3(T2) -> T1 = T2
 
-invariant [manual_1] pc1(T) | pc2(T) | pc3(T)
-invariant [manual_2] ~pc1(T) | ~pc2(T)
-invariant [manual_3] ~pc1(T) | ~pc3(T)
-invariant [manual_4] ~pc2(T) | ~pc3(T)
-invariant [manual_5] m(T,K1) & m(T,K2) -> K1 = K2
-invariant [manual_6] next_ticket = zero -> m(T,zero)
-invariant [manual_7] next_ticket ~= zero & m(T,M) -> ~le(next_ticket,M)
-invariant [manual_8] (pc2(T) | pc3(T)) -> next_ticket ~= zero
-invariant [manual_9] m(T1,M) & m(T2,M) & M ~= zero -> T1 = T2
-invariant [manual_10] pc2(T) & m(T,M) -> le(service,M)
-invariant [manual_11] pc3(T) -> m(T,service)
-invariant [manual_12] le(service,next_ticket)
-invariant [manual_13] ~(~pc1(T1) & ~pc1(T2) & m(T1,zero) & m(T2,zero) & T1 ~= T2)
+#invariant [manual_1] pc1(T) | pc2(T) | pc3(T)
+#invariant [manual_2] ~pc1(T) | ~pc2(T)
+#invariant [manual_3] ~pc1(T) | ~pc3(T)
+#invariant [manual_4] ~pc2(T) | ~pc3(T)
+#invariant [manual_5] m(T,K1) & m(T,K2) -> K1 = K2
+#invariant [manual_6] next_ticket = zero -> m(T,zero)
+#invariant [manual_7] next_ticket ~= zero & m(T,M) -> ~le(next_ticket,M)
+#invariant [manual_8] (pc2(T) | pc3(T)) -> next_ticket ~= zero
+#invariant [manual_9] m(T1,M) & m(T2,M) & M ~= zero -> T1 = T2
+#invariant [manual_10] pc2(T) & m(T,M) -> le(service,M)
+#invariant [manual_11] pc3(T) -> m(T,service)
+#invariant [manual_12] le(service,next_ticket)
+#invariant [manual_13] ~(~pc1(T1) & ~pc1(T2) & m(T1,zero) & m(T2,zero) & T1 ~= T2)

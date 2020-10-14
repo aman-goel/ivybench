@@ -61,7 +61,7 @@ export recv_unlock
 # Mutual exclusion: No two clients think they hold the lock simultaneously.
 invariant holds_lock(X) & holds_lock(Y) -> X = Y
 
-invariant [manual_1] (
+#invariant [manual_1] (
     ~held &
     (forall N. ~grant_msg(N)) &
     (forall N. ~holds_lock(N)) &

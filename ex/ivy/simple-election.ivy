@@ -54,5 +54,5 @@ export decide
 # the safety property
 invariant leader(P1) & leader(P2) -> P1 = P2
 
-invariant [manual_1] promise(A, P1) & promise(A, P2) -> P1 = P2
-invariant [manual_2] leader(P) -> ( exists Q. forall A. (member(A,Q) -> promise(A, P)) )
+#invariant [manual_1] promise(A, P1) & promise(A, P2) -> P1 = P2
+#invariant [manual_2] leader(P) -> ( exists Q. forall A. (member(A,Q) -> promise(A, P)) )

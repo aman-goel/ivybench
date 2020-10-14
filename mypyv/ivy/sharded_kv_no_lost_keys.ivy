@@ -43,4 +43,4 @@ export put
 
 invariant [safety] (exists N,K,V. transfer_msg(N,K,V)) | (forall K. exists N. owner(N,K))
 
-invariant [manual_1] forall K. (exists N. owner(N, K)) | (exists N, V. transfer_msg(N, K, V))
+#invariant [manual_1] forall K. (exists N. owner(N, K)) | (exists N, V. transfer_msg(N, K, V))

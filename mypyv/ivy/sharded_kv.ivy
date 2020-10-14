@@ -43,8 +43,8 @@ export put
 
 invariant [safety_keys_unique] table(N1, K, V1) & table(N2, K, V2) -> N1 = N2 & V1 = V2
 
-invariant [manual_1] owner(N1, K) & owner(N2, K) -> N1 = N2
-invariant [manual_2] table(N, K, V) -> owner(N, K)
-invariant [manual_3] ~(transfer_msg(N1, K, V) & owner(N2, K))
-invariant [manual_4] transfer_msg(N1, K, V1) & transfer_msg(N2, K, V2) -> N1 = N2 & V1 = V2
+#invariant [manual_1] owner(N1, K) & owner(N2, K) -> N1 = N2
+#invariant [manual_2] table(N, K, V) -> owner(N, K)
+#invariant [manual_3] ~(transfer_msg(N1, K, V) & owner(N2, K))
+#invariant [manual_4] transfer_msg(N1, K, V1) & transfer_msg(N2, K, V2) -> N1 = N2 & V1 = V2
 

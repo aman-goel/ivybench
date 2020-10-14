@@ -33,4 +33,4 @@ export send_to_internal
 
 invariant [safety] sent(S,D) & internal(D) -> exists I. internal(I) & sent(I,S)
 
-invariant [manual_1] allowed_in(D) -> exists I. internal(I) & sent(I,D)
+#invariant [manual_1] allowed_in(D) -> exists I. internal(I) & sent(I,D)

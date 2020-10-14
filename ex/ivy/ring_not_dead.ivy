@@ -57,4 +57,4 @@ export recv
 #invariant [safety_one_leader] leader(L1) & leader(L2) -> L1 = L2
 invariant [safety_not_dead] (exists L. leader(L)) | (exists M,N. pending(M, N)) | (exists N. ~sent(N))
 
-invariant [manual_1] exists N. (forall X. le(X,N)) & (~sent(N) | leader(N) | (exists M. pending(N, M)))
+#invariant [manual_1] exists N. (forall X. le(X,N)) & (~sent(N) | leader(N) | (exists M. pending(N, M)))

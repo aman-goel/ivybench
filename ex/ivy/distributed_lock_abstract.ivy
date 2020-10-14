@@ -55,14 +55,14 @@ export accept
 
 invariant [safety] locked(E, N1) & locked(E, N2) -> N1 = N2
 
-invariant [manual_1] transfer_msg(E, N1) & transfer_msg(E, N2) -> N1 = N2
-invariant [manual_2] locked(E, N) -> ~gt(E, N)
-invariant [manual_3] gt(E0, N1) & held(N1) -> gt(E0, N0)
-invariant [manual_4] held(N) & transfer_msg(E, M) -> ~gt(E, N)
-invariant [manual_5] transfer_msg(E, N) & gt(E, N) -> gt(E, M)
-invariant [manual_6] transfer_msg(E, N) & gt(E, N) & transfer_msg(F, M) -> le(F, E)
-invariant [manual_ic3po7]	(forall E0, E1, N0 . ((gt(E0, N0) & le(E0, E1)) -> gt(E1, N0)))
-invariant [manual_ic3po8]	(forall E0, E1, N0 . (gt(E0, N0) -> (held(N0) -> (transfer_msg(E1, N0) -> ~le(E0, E1)))))
-invariant [manual_ic3po9]	(forall N1, N0 . ((held(N0) & held(N1)) -> (N0 = N1)))
-invariant [manual_ic3po10]	(forall N0 . ~gt(zero, N0))
-invariant [manual_ic3po11]	(forall E0, N0 . (locked(E0, N0) -> ((E0 = zero) | transfer_msg(E0, N0))))
+#invariant [manual_1] transfer_msg(E, N1) & transfer_msg(E, N2) -> N1 = N2
+#invariant [manual_2] locked(E, N) -> ~gt(E, N)
+#invariant [manual_3] gt(E0, N1) & held(N1) -> gt(E0, N0)
+#invariant [manual_4] held(N) & transfer_msg(E, M) -> ~gt(E, N)
+#invariant [manual_5] transfer_msg(E, N) & gt(E, N) -> gt(E, M)
+#invariant [manual_6] transfer_msg(E, N) & gt(E, N) & transfer_msg(F, M) -> le(F, E)
+#invariant [manual_ic3po7]	(forall E0, E1, N0 . ((gt(E0, N0) & le(E0, E1)) -> gt(E1, N0)))
+#invariant [manual_ic3po8]	(forall E0, E1, N0 . (gt(E0, N0) -> (held(N0) -> (transfer_msg(E1, N0) -> ~le(E0, E1)))))
+#invariant [manual_ic3po9]	(forall N1, N0 . ((held(N0) & held(N1)) -> (N0 = N1)))
+#invariant [manual_ic3po10]	(forall N0 . ~gt(zero, N0))
+#invariant [manual_ic3po11]	(forall E0, N0 . (locked(E0, N0) -> ((E0 = zero) | transfer_msg(E0, N0))))

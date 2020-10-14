@@ -58,11 +58,11 @@ export recv_unlock
 
 invariant [safety] holds_lock(N1) & holds_lock(N2) -> N1 = N2
 
-invariant [manual_1] grant_msg(N1) & grant_msg(N2) -> N1 = N2
-invariant [manual_2] unlock_msg(N1) & unlock_msg(N2) -> N1 = N2
-invariant [manual_3] ~(holds_lock(N1) & grant_msg(N2))
-invariant [manual_4] ~(holds_lock(N1) & unlock_msg(N2))
-invariant [manual_5] ~(grant_msg(N1) & unlock_msg(N2))
-invariant [manual_6] ~(grant_msg(N) & server_holds_lock)
-invariant [manual_7] ~(holds_lock(N) & server_holds_lock)
-invariant [manual_8] ~(unlock_msg(N) & server_holds_lock)
+#invariant [manual_1] grant_msg(N1) & grant_msg(N2) -> N1 = N2
+#invariant [manual_2] unlock_msg(N1) & unlock_msg(N2) -> N1 = N2
+#invariant [manual_3] ~(holds_lock(N1) & grant_msg(N2))
+#invariant [manual_4] ~(holds_lock(N1) & unlock_msg(N2))
+#invariant [manual_5] ~(grant_msg(N1) & unlock_msg(N2))
+#invariant [manual_6] ~(grant_msg(N) & server_holds_lock)
+#invariant [manual_7] ~(holds_lock(N) & server_holds_lock)
+#invariant [manual_8] ~(unlock_msg(N) & server_holds_lock)

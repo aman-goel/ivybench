@@ -55,7 +55,7 @@ export become_leader
 
 invariant [unique_leader] forall X,Y. leader(X) & leader(Y) -> X=Y
 
-invariant [manual_1] forall X,Y,Z. voters(X,Y) & voters(X,Z) -> Y=Z
-invariant [manual_2] vote(X,Y) & vote(X,Z) -> Y = Z
-invariant [manual_3] voters(X,VS) & member(Y,VS) -> vote(Y,X)
-invariant [manual_4] leader(X) -> exists VS. majority(VS) & voters(X,VS)
+#invariant [manual_1] forall X,Y,Z. voters(X,Y) & voters(X,Z) -> Y=Z
+#invariant [manual_2] vote(X,Y) & vote(X,Z) -> Y = Z
+#invariant [manual_3] voters(X,VS) & member(Y,VS) -> vote(Y,X)
+#invariant [manual_4] leader(X) -> exists VS. majority(VS) & voters(X,VS)

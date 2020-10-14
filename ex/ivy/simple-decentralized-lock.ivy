@@ -31,7 +31,7 @@ export recv
 
 invariant X ~= Y -> ~(has_lock(X) & has_lock(Y))
 
-invariant [manual_1] ~(has_lock(X) & message(Y,Z))
-invariant [manual_2] ~message(X,Y) | ~message(Z,W) | X=Z
-invariant [manual_3] ~message(X,Y) | ~message(Z,W) | Y=W
-invariant [manual_4] forall A, B, C, D . ((((A) = (B)) & ((C) = (D))) | ((~(has_lock(A))) & (~(message(A, C)))) | (~(message(B, D))))
+#invariant [manual_1] ~(has_lock(X) & message(Y,Z))
+#invariant [manual_2] ~message(X,Y) | ~message(Z,W) | X=Z
+#invariant [manual_3] ~message(X,Y) | ~message(Z,W) | Y=W
+#invariant [manual_4] forall A, B, C, D . ((((A) = (B)) & ((C) = (D))) | ((~(has_lock(A))) & (~(message(A, C)))) | (~(message(B, D))))

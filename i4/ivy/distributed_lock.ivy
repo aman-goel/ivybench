@@ -84,19 +84,19 @@ export accept
 invariant locked(E, N1) & locked(E, N2) -> N1 = N2
 
 # epochs transfer to at most one node    
-invariant [manual_1] transfer(E, N1) & transfer(E, N2) -> N1 = N2
+#invariant [manual_1] transfer(E, N1) & transfer(E, N2) -> N1 = N2
 
 # if a node sent a locked msg, the node's epoch is now higher
-invariant [manual_2] locked(E, N) -> le(E, ep(N))
+#invariant [manual_2] locked(E, N) -> le(E, ep(N))
 
 # holding node's epoch is higher than any other node's epoch (this implies a single node holds the lock)
-invariant [manual_3] held(N) & N ~= M -> ~le(ep(N), ep(M))
+#invariant [manual_3] held(N) & N ~= M -> ~le(ep(N), ep(M))
 
 # holding node's epoch is higher than any transfer's epoch
-invariant [manual_4] held(N) & transfer(E, M) -> le(E, ep(N))
+#invariant [manual_4] held(N) & transfer(E, M) -> le(E, ep(N))
 
 # pending transfer epoch is higher than any node's epoch
-invariant [manual_5] transfer(E, N) & ~le(E, ep(N)) -> ~le(E, ep(M))
+#invariant [manual_5] transfer(E, N) & ~le(E, ep(N)) -> ~le(E, ep(M))
 
 # pending transfer epoch is higher than any transfer's epoch
-invariant [manual_6] transfer(E, N) & ~le(E, ep(N)) & transfer(F, M) -> le(F, E) 
+#invariant [manual_6] transfer(E, N) & ~le(E, ep(N)) & transfer(F, M) -> le(F, E) 

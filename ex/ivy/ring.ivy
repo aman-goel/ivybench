@@ -52,5 +52,5 @@ export recv
 
 invariant [safety_leader_max] leader(L) -> le(N, L)
 
-invariant [manual_1] pending(S, D) & btw(S, N, D) -> le(N, S)
-invariant [manual_2] pending(L, L) -> le(N, L)
+#invariant [manual_1] pending(S, D) & btw(S, N, D) -> le(N, S)
+#invariant [manual_2] pending(L, L) -> le(N, L)

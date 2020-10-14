@@ -52,6 +52,6 @@ export recv
 
 invariant [leader_unique] leader(X) & leader(Y) -> X = Y
 
-invariant [manual_1] leader(L) -> le(idn(N), idn(L))
-invariant [manual_2] pending(idn(L), L) -> le(idn(N), idn(L))
-invariant [manual_3] pending(idn(S), D) & btw(S, N, D) -> le(idn(N), idn(S))
+#invariant [manual_1] leader(L) -> le(idn(N), idn(L))
+#invariant [manual_2] pending(idn(L), L) -> le(idn(N), idn(L))
+#invariant [manual_3] pending(idn(S), D) & btw(S, N, D) -> le(idn(N), idn(S))

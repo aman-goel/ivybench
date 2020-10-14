@@ -174,20 +174,20 @@ export test
 invariant ~error(N)
 
 
-invariant [manual_1] s1(X,Y) -> in_s1(X)
-invariant [manual_2] s2(X,Y) -> in_s2(X)
-invariant [manual_3] reach(org)
-invariant [manual_4] s1(X,Y) & s1(X,Z) -> Y=Z
-invariant [manual_5] s2(X,Y) & s2(X,Z) -> Y=Z
-invariant [manual_6] p(X,Y) & p(X,Z) -> Y=Z
-invariant [manual_7] (a(X) | X ~= org)
-invariant [manual_8] (a(X) | ~p(Y, X) | ~s1(X, Y)) 
-invariant [manual_9] (a(X) | p(Y, X) | ~s1(X, Y)) 
-invariant [manual_10] (a(X) | ~s2(X, Y)) 
-invariant [manual_11] (in_s1(X) | ~a(X))
-invariant [manual_12] (a(Y) | a(Z) | ~s1(X, Y) | ~s2(X, Z)) 
-invariant [manual_13] (a(Y) | in_s2(X) | ~a(X) | ~s1(X, Y)) 
-invariant [manual_14] p(A,B) -> a(A)
-invariant [manual_15] a(X) & p(Y,X) & s1(X,Y) -> a(Y)
-invariant [manual_16] (~ring.btw(X, org, Y) | ~s1(X, Y)) 
-invariant [manual_17] ~(s1(V0, V1) & V1 ~= org & s2(V0, V2) & ring.btw(V0, org, V2))
+#invariant [manual_1] s1(X,Y) -> in_s1(X)
+#invariant [manual_2] s2(X,Y) -> in_s2(X)
+#invariant [manual_3] reach(org)
+#invariant [manual_4] s1(X,Y) & s1(X,Z) -> Y=Z
+#invariant [manual_5] s2(X,Y) & s2(X,Z) -> Y=Z
+#invariant [manual_6] p(X,Y) & p(X,Z) -> Y=Z
+#invariant [manual_7] (a(X) | X ~= org)
+#invariant [manual_8] (a(X) | ~p(Y, X) | ~s1(X, Y)) 
+#invariant [manual_9] (a(X) | p(Y, X) | ~s1(X, Y)) 
+#invariant [manual_10] (a(X) | ~s2(X, Y)) 
+#invariant [manual_11] (in_s1(X) | ~a(X))
+#invariant [manual_12] (a(Y) | a(Z) | ~s1(X, Y) | ~s2(X, Z)) 
+#invariant [manual_13] (a(Y) | in_s2(X) | ~a(X) | ~s1(X, Y)) 
+#invariant [manual_14] p(A,B) -> a(A)
+#invariant [manual_15] a(X) & p(Y,X) & s1(X,Y) -> a(Y)
+#invariant [manual_16] (~ring.btw(X, org, Y) | ~s1(X, Y)) 
+#invariant [manual_17] ~(s1(V0, V1) & V1 ~= org & s2(V0, V2) & ring.btw(V0, org, V2))

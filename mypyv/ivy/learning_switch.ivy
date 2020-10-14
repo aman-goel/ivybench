@@ -37,8 +37,8 @@ invariant [safety] (forall T, X. table(T,X,X)) & (forall T, X, Y, Z. table(T,X,Y
 #invariant [safety_3] table(T,X,Y) & table(T,Y,X) -> X = Y
 #invariant [safety_4] table(T,X,Y) & table(T,X,Z) -> table(T,Y,Z) | table(T,Z,Y)
 
-invariant [manual_1] pending(PS,PD,S,D) & PS ~= S -> exists W. table(PS,S,W) & W ~= S
-invariant [manual_2] table(T,X,Y) & T ~= Y & X ~= Y -> exists W. table(T,Y,W) & W ~= Y
-invariant [manual_3] pending(PS,PD,S,D) & PS ~= S -> table(PS,S,PS)
-invariant [manual_4] table(T,X,Y) & T ~= Y & X ~= Y -> table(T,Y,T)
+#invariant [manual_1] pending(PS,PD,S,D) & PS ~= S -> exists W. table(PS,S,W) & W ~= S
+#invariant [manual_2] table(T,X,Y) & T ~= Y & X ~= Y -> exists W. table(T,Y,W) & W ~= Y
+#invariant [manual_3] pending(PS,PD,S,D) & PS ~= S -> table(PS,S,PS)
+#invariant [manual_4] table(T,X,Y) & T ~= Y & X ~= Y -> table(T,Y,T)
 

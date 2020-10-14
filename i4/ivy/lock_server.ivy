@@ -34,4 +34,4 @@ export disconnect
 
 invariant [unique] forall C1, C2 : client, S: server. link(C1, S) & link(C2, S) -> C1 = C2
 
-invariant [manual_1] link(C, S) -> ~semaphore(S)
+#invariant [manual_1] link(C, S) -> ~semaphore(S)

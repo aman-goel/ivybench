@@ -73,12 +73,12 @@ export step_b
 
 invariant [safety] (forall S:node. pc(S) = done) -> (exists I:node. y(I) = one)
 
-invariant [manual_1] forall I:node, V:value. x(I, V) -> (V = zero | V = one)
-invariant [manual_2] forall I:node. (y(I) = zero) | (y(I) = one)
-invariant [manual_3] forall I:node. (pc(I) = a1) | (pc(I) = a2) | (pc(I) = b) | (pc(I) = done)
-invariant [manual_4] forall I:node. (pc(I) = b | pc(I) = done) -> x(I, one)
-invariant [manual_5] (exists I:node. pc(I) ~= done) | (exists I:node. y(I) = one)
+#invariant [manual_1] forall I:node, V:value. x(I, V) -> (V = zero | V = one)
+#invariant [manual_2] forall I:node. (y(I) = zero) | (y(I) = one)
+#invariant [manual_3] forall I:node. (pc(I) = a1) | (pc(I) = a2) | (pc(I) = b) | (pc(I) = done)
+#invariant [manual_4] forall I:node. (pc(I) = b | pc(I) = done) -> x(I, one)
+#invariant [manual_5] (exists I:node. pc(I) ~= done) | (exists I:node. y(I) = one)
 
-invariant [manual_ic3po6]	(forall N0 . ((pc(N0) = a1) | x(N0, one)))
-invariant [manual_ic3po7]	(forall N0 . ((pc(N0) = done) -> ~x(N0, zero)))
-invariant [manual_ic3po8]	(forall V0, N0 . (((pc(N0) = b) & x(N0, V0)) -> (V0 = one)))
+#invariant [manual_ic3po6]	(forall N0 . ((pc(N0) = a1) | x(N0, one)))
+#invariant [manual_ic3po7]	(forall N0 . ((pc(N0) = done) -> ~x(N0, zero)))
+#invariant [manual_ic3po8]	(forall V0, N0 . (((pc(N0) = b) & x(N0, V0)) -> (V0 = one)))
