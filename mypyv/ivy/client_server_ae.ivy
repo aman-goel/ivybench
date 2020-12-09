@@ -18,6 +18,8 @@ relation request_sent(N:node, R:request)
 relation response_sent(N:node, P:response)
 relation response_received(N:node, P:response)	
 
+relation responseMatched(N:node, P:response) = exists R. request_sent(N,R) & match(R,P)
+
 after init  {
 	request_sent(N,R) := false;
 	response_sent(N,P) := false;
@@ -45,6 +47,6 @@ export new_request
 export respond
 export receive_response
 
-invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
+invariant [safety] forall N,P. response_received(N,P) -> responseMatched(N, P)
 
 #invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)

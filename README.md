@@ -4,13 +4,13 @@ Compiled by Aman Goel [(amangoel@umich.edu)](amangoel@umich.edu)  and  Karem A. 
 
 
 #### Description
-41 safety checking problems ([Ivy](https://github.com/microsoft/ivy) files, as well as in [PYV](https://github.com/wilcoxjay/mypyvy) and [VMT](http://www.vmt-lib.org/) format), that can be classified as follows:
+42 safety checking problems ([Ivy](https://github.com/microsoft/ivy) files, as well as in [PYV](https://github.com/wilcoxjay/mypyvy) and [VMT](http://www.vmt-lib.org/) format), that can be classified as follows:
 
 - **tla:** 
 A set of 5 problems converted from the TLA+ Examples repository [1, 2, 3]. Problems include transaction commit, two-phase commit, etc.
 
 - **ex:** 
-A set of 13 problems collected from various openly-available resources [4, 5, 6]. Problems include toy consensus, decentralized lock, simple election, etc.
+A set of 14 problems collected from various openly-available resources [4, 5, 6]. Problems include toy consensus, decentralized lock, simple election, etc.
 
 - **i4:** 
 A set of 7 problems collected from benchmark suite accompanying the tool I4 [7]. Problems include chord ring, database chain replication, two-phase commit, etc.

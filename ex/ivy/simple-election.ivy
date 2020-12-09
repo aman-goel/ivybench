@@ -26,6 +26,9 @@ relation leader(P: proposer)
 #
 ################################################################################
 
+relation didNotPromise(A:acceptor) = forall P. ~promise(A, P)
+relation chosenAt(Q:quorum, P: proposer) = forall A. member(A, Q) -> promise(A, P)
+
 after init {
     start(P) := false;
     promise(A, P) := false;
@@ -38,12 +41,12 @@ action send_1a(p: proposer) = {
 
 action send_1b(a: acceptor, p: proposer) = {
     require start(p);
-    require ~promise(a, P);
+    require didNotPromise(a);
     promise(a, p) := true;
 }
 
 action decide(p: proposer, q: quorum) = {
-    require member(A, q) -> promise(A, p);
+    require chosenAt(q, p);
     leader(p) := true;
 }
 

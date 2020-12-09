@@ -11,6 +11,8 @@ relation voted(N:node)
 relation vote(N:node, V:value)
 relation decided(V:value)
 
+relation chosenAt(Q:quorum, V:value) = forall N. member(N, Q) -> vote(N, V)
+
 after init {
     voted(N) := false;
     vote(N, V) := false;
@@ -25,7 +27,7 @@ action cast_vote(n: node, v: value) = {
 }
 
 action decide(v: value, q: quorum) = {
-    require member(N,q) -> vote(N,v);
+    require chosenAt(q, v);
     
     decided(v) := true;
 }

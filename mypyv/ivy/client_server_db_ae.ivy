@@ -24,6 +24,9 @@ relation db_response_sent(D:db_request_id, P:response)
 
 relation t(D:db_request_id, N:node)
 
+relation noneWithId(I:db_request_id) = forall N. ~t(I,N)
+relation responseMatched(N:node, P:response) = exists R. request_sent(N,R) & match(R,P)
+
 after init  {
 	request_sent(N,R) := false;
 	response_sent(N,P) := false;
@@ -39,7 +42,7 @@ action new_request(n:node, r:request) = {
 
 action server_process_request(n:node, r:request, i:db_request_id) = {
   require request_sent(n,r);
-  require forall N. ~t(i,N);
+  require noneWithId(i);
   
   t(i, n) := true;
   db_request_sent(i, r) := true;
@@ -71,7 +74,7 @@ export db_process_request
 export server_process_db_response
 export receive_response
 
-invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
+invariant [safety] forall N,P. response_received(N,P) -> responseMatched(N, P)
 
 #invariant [manual_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)
 #invariant [manual_2] forall I,R. db_request_sent(I,R) -> exists N. t(I,N) & request_sent(N,R)

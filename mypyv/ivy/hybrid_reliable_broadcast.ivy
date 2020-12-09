@@ -93,6 +93,15 @@ relation rcv_msg(N0:node, N1:node) # (src, dst)
 # projection of sent_msg
 relation sent_msg_proj(N:node) # := exists D. sent_msg(S,D)
 
+#relation rcvAtA(X:node, A:quorum_a) = forall N. member_a(N,A) -> rcv_msg(N,X)
+#relation rcvAtB(X:node, B:quorum_b) = forall N. member_b(N,B) -> rcv_msg(N,X)
+relation chosenAtA(X:node) = exists A. forall N. member_a(N,A) -> rcv_msg(N,X)
+relation chosenAtB(X:node) = exists B. forall N. member_b(N,B) -> rcv_msg(N,X)
+relation sentMsgAt(N:node) = (exists D. sent_msg(N, D))
+
+relation accepted = (exists N. ~member_fs(N) & ~member_fa(N) & accept(N))
+relation received_init = (exists M. ~member_fs(M) & ~member_fa(M) & rcv_init(M))
+
 after init  {
 	accept(N) := false;
 	sent_msg(N1, N2) := false;
@@ -121,9 +130,9 @@ action receive_msg(n:node, s:node) = {
 	require sent_msg(s, n);
 
 	rcv_msg(s, n) := true;
-	accept(n) := accept(n) | (exists B. forall N. member_b(N,B) -> rcv_msg(N,n));
-	sent_msg(n, D) := sent_msg(n, D) | (exists A. forall N. member_a(N,A) -> rcv_msg(N,n));
-	sent_msg_proj(n) := sent_msg_proj(n) | (exists A. forall N. member_a(N,A) -> rcv_msg(N,n));
+	accept(n) := accept(n) | chosenAtB(n);
+	sent_msg(n, D) := sent_msg(n, D) | chosenAtA(n);
+	sent_msg_proj(n) := sent_msg_proj(n) | chosenAtA(n);
 }
 
 ################################################################################
@@ -137,9 +146,9 @@ action receive_msg_c(n:node, s:node, nondet:bool) = {
 	require sent_msg(s, n);
 
 	rcv_msg(s, n) := true;
-	accept(n) := accept(n) | (exists B. forall N. member_b(N,B) -> rcv_msg(N,n));
-	sent_msg(n, D) := sent_msg(n, D) | (nondet & (exists A. forall N. member_a(N,A) -> rcv_msg(N,n)));
-	sent_msg_proj(n) := sent_msg_proj(n) | (nondet & (exists A. forall N. member_a(N,A) -> rcv_msg(N,n)));
+	accept(n) := accept(n) | chosenAtB(n);
+	sent_msg(n, D) := sent_msg(n, D) | (nondet & chosenAtA(n));
+	sent_msg_proj(n) := sent_msg_proj(n) | (nondet & chosenAtA(n));
 }
 
 ################################################################################
@@ -150,7 +159,7 @@ action receive_init_i(n:node, nondet:bool) = {
 	require member_fi(n);
 	require rcv_init(n);
 	
-	sent_msg_proj(n) := (exists D. sent_msg(n, D)) | nondet;
+	sent_msg_proj(n) := sentMsgAt(n) | nondet;
 	sent_msg(n, D) := sent_msg(n, D) | nondet;
 }
 
@@ -159,9 +168,9 @@ action receive_msg_i(n:node, s:node, nondet:bool) = {
 	require sent_msg(s, n);
 	
 	rcv_msg(s, n) := true;
-	accept(n) := accept(n) | (exists B. forall N. member_b(N,B) -> rcv_msg(N,n));
-	sent_msg_proj(n) := (exists D. sent_msg(n, D)) | (nondet & (exists A. forall N. member_a(N,A) -> rcv_msg(N,n)));
-	sent_msg(n, D) := sent_msg(n, D) | (nondet & (exists A. forall N. member_a(N,A) -> rcv_msg(N,n)));
+	accept(n) := accept(n) | chosenAtB(n);
+	sent_msg_proj(n) := sentMsgAt(n) | (nondet & chosenAtA(n));
+	sent_msg(n, D) := sent_msg(n, D) | (nondet & chosenAtA(n));
 }
 
 ################################################################################
@@ -189,7 +198,7 @@ action faulty_state_sa(n:node) = {
 action faulty_send_a(n:node, nondet:bool) = {
 	require member_fa(n);
 	
-	sent_msg_proj(n) := (exists D. sent_msg(n, D)) | nondet;
+	sent_msg_proj(n) := sentMsgAt(n) | nondet;
 	sent_msg(n, D) := sent_msg(n, D) | nondet;
 }
 
@@ -209,7 +218,7 @@ export faulty_send_a
 #
 ################################################################################
 
-invariant [unforgebility] (exists N. ~member_fs(N) & ~member_fa(N) & accept(N)) -> (exists M. ~member_fs(M) & ~member_fa(M) & rcv_init(M))
+invariant [unforgebility] accepted -> received_init
 
 #invariant [manual_1] sent_msg_proj(N1) -> exists N2. sent_msg(N1,N2) # breaks decidability
 #invariant [manual_2] sent_msg(N1,N2) -> sent_msg_proj(N1)
