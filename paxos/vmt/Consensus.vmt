@@ -1,28 +1,38 @@
+; VMT / SMT-LIB2 version of Consensus.tla from https://github.com/tlaplus/Examples/blob/fca227eb2bda8b811cda68d92d512ca266e4412f/specifications/PaxosHowToWinATuringAward/Consensus.tla
+
+; Declares an uninterpreted sort named value
 (declare-sort value 0)
 
+; Optional: associate a finite size with the value sort
 (define-fun .value ((S value)) value (! S :sort 2))
 
+; Declare a relation __chosen of type value -> Bool
 (declare-fun __chosen (value) Bool)
 
+; Declare a relation chosen of type value -> Bool
 (declare-fun chosen (value) Bool)
 
+; Establish chosen as the next-state version of __chosen
 (define-fun .chosen ((V0 value)) Bool (! (__chosen V0) :next chosen))
 
+; Safety property
 (define-fun .prop () Bool (! 
  (let (($v (forall ((V1 value) (V2 value)) (=> (and (__chosen V1) (__chosen V2)) (= V1 V2)))
  ))
  (and $v))
  :invar-property 0))
 
+; Initial state formula
 (define-fun .init () Bool (! 
  (let (($v (forall ((V0 value)) (= (__chosen V0) false))
  ))
  (and $v))
  :init true))
 
+; Next state formula composed of as a disjunction of actions
+; This problem has just one action named ext:choose
 (define-fun .action_ext:choose () Bool (! 
  (let (($v (exists ((V__fml:v value)) (and (forall ((V0 value)) (= (chosen V0) (ite (= V0 V__fml:v) true (__chosen V0)))) (forall ((V value)) (not (__chosen V)))))
  ))
  (and $v))
  :action ext:choose))
-
