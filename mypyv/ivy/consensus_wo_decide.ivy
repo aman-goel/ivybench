@@ -13,6 +13,8 @@ relation votes(N0:node, N1:node)
 relation leader(N:node)
 function voting_quorum: quorum
 
+relation chosen(N:node) = exists Q. forall Nv. member(Nv, Q) -> votes(N, Nv)
+
 after init  {
 	vote_request_msg(N1, N2) := false;
 	voted(N) := false;
@@ -42,6 +44,7 @@ action recv_vote(n: node, sender: node) = {
 
 action choose_voting_quorum(q: quorum, sn: node) = {
   require forall N. member(N, q) -> votes(sn, N);
+  require chosen(sn);
   
   voting_quorum := q;
 }

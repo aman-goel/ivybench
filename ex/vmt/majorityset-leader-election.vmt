@@ -1,8 +1,8 @@
 (declare-sort node 0)
 (declare-sort nodeset 0)
 
-(define-fun .node ((S node)) node (! S :sort 3))
-(define-fun .nodeset ((S nodeset)) nodeset (! S :sort 3))
+(define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .nodeset ((S nodeset)) nodeset (! S :sort 2))
 
 (declare-fun __didNotVote (node) Bool)
 (declare-fun __leader (node) Bool)

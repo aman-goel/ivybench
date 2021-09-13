@@ -6,6 +6,7 @@
 (define-fun .quorum ((S quorum)) quorum (! S :sort 1))
 (define-fun .value ((S value)) value (! S :sort 2))
 
+(declare-fun __chosen (node) Bool)
 (declare-fun __decided (node value) Bool)
 (declare-fun __leader (node) Bool)
 (declare-fun __vote_msg (node node) Bool)
@@ -13,6 +14,7 @@
 (declare-fun __voted (node) Bool)
 (declare-fun __votes (node node) Bool)
 
+(declare-fun chosen (node) Bool)
 (declare-fun decided (node value) Bool)
 (declare-fun leader (node) Bool)
 (declare-fun vote_msg (node node) Bool)
@@ -20,6 +22,7 @@
 (declare-fun voted (node) Bool)
 (declare-fun votes (node node) Bool)
 
+(define-fun .chosen ((V0 node)) Bool (! (__chosen V0) :next chosen))
 (define-fun .decided ((V0 node) (V1 value)) Bool (! (__decided V0 V1) :next decided))
 (define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
 (define-fun .vote_msg ((V0 node) (V1 node)) Bool (! (__vote_msg V0 V1) :next vote_msg))
@@ -30,6 +33,18 @@
 (declare-fun member (node quorum) Bool)
 
 (define-fun .member ((V0 node) (V1 quorum)) Bool (! (member V0 V1) :global true))
+
+(define-fun .def___chosen () Bool (! 
+ (let (($v (forall ((V0 node)) (= (__chosen V0) (exists ((Q quorum)) (forall ((Nv node)) (=> (member Nv Q) (__votes V0 Nv))))))
+ ))
+ (and $v))
+ :definition __chosen))
+
+(define-fun .def_chosen () Bool (! 
+ (let (($v (forall ((V0 node)) (= (chosen V0) (exists ((Q quorum)) (forall ((Nv node)) (=> (member Nv Q) (votes V0 Nv))))))
+ ))
+ (and $v))
+ :definition chosen))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((N1 node) (N2 node) (V1 value) (V2 value)) (=> (and (__decided N1 V1) (__decided N2 V2)) (= V1 V2)))
@@ -50,7 +65,7 @@
  :init true))
 
 (define-fun .action_ext:become_leader () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:q quorum)) (and (forall ((V0 node)) (= (leader V0) (ite (= V0 V__fml:n) true (__leader V0)))) (forall ((N node)) (=> (member N V__fml:q) (__votes V__fml:n N)))))
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (leader V0) (ite (= V0 V__fml:n) true (__leader V0)))) (__chosen V__fml:n)))
  ))
  (and $v))
  :action ext:become_leader))
