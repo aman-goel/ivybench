@@ -1,29 +1,29 @@
-(declare-sort ticket 0)
 (declare-sort thread 0)
+(declare-sort ticket 0)
 
-(define-fun .ticket ((S ticket)) ticket (! S :sort 0))
 (define-fun .thread ((S thread)) thread (! S :sort 2))
+(define-fun .ticket ((S ticket)) ticket (! S :sort 0))
 
-(declare-fun __pc1 (thread) Bool)
-(declare-fun __service () ticket)
-(declare-fun __pc3 (thread) Bool)
 (declare-fun __m (thread ticket) Bool)
 (declare-fun __next_ticket () ticket)
+(declare-fun __pc1 (thread) Bool)
 (declare-fun __pc2 (thread) Bool)
+(declare-fun __pc3 (thread) Bool)
+(declare-fun __service () ticket)
 
-(declare-fun pc1 (thread) Bool)
-(declare-fun service () ticket)
-(declare-fun pc3 (thread) Bool)
 (declare-fun m (thread ticket) Bool)
 (declare-fun next_ticket () ticket)
+(declare-fun pc1 (thread) Bool)
 (declare-fun pc2 (thread) Bool)
+(declare-fun pc3 (thread) Bool)
+(declare-fun service () ticket)
 
-(define-fun .pc1 ((V0 thread)) Bool (! (__pc1 V0) :next pc1))
-(define-fun .service () ticket (! __service :next service))
-(define-fun .pc3 ((V0 thread)) Bool (! (__pc3 V0) :next pc3))
 (define-fun .m ((V0 thread) (V1 ticket)) Bool (! (__m V0 V1) :next m))
 (define-fun .next_ticket () ticket (! __next_ticket :next next_ticket))
+(define-fun .pc1 ((V0 thread)) Bool (! (__pc1 V0) :next pc1))
 (define-fun .pc2 ((V0 thread)) Bool (! (__pc2 V0) :next pc2))
+(define-fun .pc3 ((V0 thread)) Bool (! (__pc3 V0) :next pc3))
+(define-fun .service () ticket (! __service :next service))
 
 (declare-fun le (ticket ticket) Bool)
 (declare-fun zero () ticket)
@@ -55,15 +55,15 @@
  (and $v))
  :action ext:step12))
 
-(define-fun .action_ext:step31 () Bool (! 
- (let (($v (exists ((V__fml:t thread) (V__fml:y ticket)) (and (forall ((V0 thread)) (= (pc3 V0) (ite (= V0 V__fml:t) false (__pc3 V0)))) (forall ((V0 thread)) (= (pc1 V0) (ite (= V0 V__fml:t) true (__pc1 V0)))) (= service V__fml:y) (__pc3 V__fml:t) (not (le V__fml:y __service)) (forall ((Z ticket)) (=> (not (le Z __service)) (le V__fml:y Z)))))
- ))
- (and $v))
- :action ext:step31))
-
 (define-fun .action_ext:step23 () Bool (! 
  (let (($v (exists ((V__fml:k ticket) (V__fml:t thread)) (and (forall ((V0 thread)) (= (pc2 V0) (ite (= V0 V__fml:t) false (__pc2 V0)))) (forall ((V0 thread)) (= (pc3 V0) (ite (= V0 V__fml:t) true (__pc3 V0)))) (__pc2 V__fml:t) (__m V__fml:t V__fml:k) (le V__fml:k __service)))
  ))
  (and $v))
  :action ext:step23))
+
+(define-fun .action_ext:step31 () Bool (! 
+ (let (($v (exists ((V__fml:t thread) (V__fml:y ticket)) (and (forall ((V0 thread)) (= (pc3 V0) (ite (= V0 V__fml:t) false (__pc3 V0)))) (forall ((V0 thread)) (= (pc1 V0) (ite (= V0 V__fml:t) true (__pc1 V0)))) (= service V__fml:y) (__pc3 V__fml:t) (not (le V__fml:y __service)) (forall ((Z ticket)) (=> (not (le Z __service)) (le V__fml:y Z)))))
+ ))
+ (and $v))
+ :action ext:step31))
 

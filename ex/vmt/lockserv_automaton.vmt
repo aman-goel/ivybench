@@ -2,23 +2,23 @@
 
 (define-fun .node ((S node)) node (! S :sort 2))
 
-(declare-fun __unlock_msg (node) Bool)
 (declare-fun __grant_msg (node) Bool)
 (declare-fun __held () Bool)
-(declare-fun __lock_msg (node) Bool)
 (declare-fun __holds_lock (node) Bool)
+(declare-fun __lock_msg (node) Bool)
+(declare-fun __unlock_msg (node) Bool)
 
-(declare-fun unlock_msg (node) Bool)
 (declare-fun grant_msg (node) Bool)
 (declare-fun held () Bool)
-(declare-fun lock_msg (node) Bool)
 (declare-fun holds_lock (node) Bool)
+(declare-fun lock_msg (node) Bool)
+(declare-fun unlock_msg (node) Bool)
 
-(define-fun .unlock_msg ((V0 node)) Bool (! (__unlock_msg V0) :next unlock_msg))
 (define-fun .grant_msg ((V0 node)) Bool (! (__grant_msg V0) :next grant_msg))
 (define-fun .held () Bool (! __held :next held))
-(define-fun .lock_msg ((V0 node)) Bool (! (__lock_msg V0) :next lock_msg))
 (define-fun .holds_lock ((V0 node)) Bool (! (__holds_lock V0) :next holds_lock))
+(define-fun .lock_msg ((V0 node)) Bool (! (__lock_msg V0) :next lock_msg))
+(define-fun .unlock_msg ((V0 node)) Bool (! (__unlock_msg V0) :next unlock_msg))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((X node) (Y node)) (=> (and (__holds_lock X) (__holds_lock Y)) (= X Y)))
@@ -32,11 +32,11 @@
  (and $v))
  :init true))
 
-(define-fun .action_ext:recv_unlock () Bool (! 
- (let (($v (exists ((V__fml:sender node)) (and (forall ((V0 node)) (= (unlock_msg V0) (ite (= V0 V__fml:sender) false (__unlock_msg V0)))) (= held false) (__unlock_msg V__fml:sender)))
+(define-fun .action_ext:lock () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (forall ((V0 node)) (= (lock_msg V0) (ite (= V0 V__fml:n) true (__lock_msg V0)))))
  ))
  (and $v))
- :action ext:recv_unlock))
+ :action ext:lock))
 
 (define-fun .action_ext:recv_grant () Bool (! 
  (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (grant_msg V0) (ite (= V0 V__fml:n) false (__grant_msg V0)))) (forall ((V0 node)) (= (holds_lock V0) (ite (= V0 V__fml:n) true (__holds_lock V0)))) (__grant_msg V__fml:n)))
@@ -50,15 +50,15 @@
  (and $v))
  :action ext:recv_lock))
 
+(define-fun .action_ext:recv_unlock () Bool (! 
+ (let (($v (exists ((V__fml:sender node)) (and (forall ((V0 node)) (= (unlock_msg V0) (ite (= V0 V__fml:sender) false (__unlock_msg V0)))) (= held false) (__unlock_msg V__fml:sender)))
+ ))
+ (and $v))
+ :action ext:recv_unlock))
+
 (define-fun .action_ext:unlock () Bool (! 
  (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (holds_lock V0) (ite (= V0 V__fml:n) false (__holds_lock V0)))) (forall ((V0 node)) (= (unlock_msg V0) (ite (= V0 V__fml:n) true (__unlock_msg V0)))) (__holds_lock V__fml:n)))
  ))
  (and $v))
  :action ext:unlock))
-
-(define-fun .action_ext:lock () Bool (! 
- (let (($v (exists ((V__fml:n node)) (forall ((V0 node)) (= (lock_msg V0) (ite (= V0 V__fml:n) true (__lock_msg V0)))))
- ))
- (and $v))
- :action ext:lock))
 

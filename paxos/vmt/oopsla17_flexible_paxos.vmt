@@ -1,0 +1,141 @@
+(declare-sort node 0)
+(declare-sort quorum_1 0)
+(declare-sort quorum_2 0)
+(declare-sort round 0)
+(declare-sort value 0)
+
+(define-fun .node ((S node)) node (! S :sort 3))
+(define-fun .quorum_1 ((S quorum_1)) quorum_1 (! S :sort 3))
+(define-fun .quorum_2 ((S quorum_2)) quorum_2 (! S :sort 3))
+(define-fun .round ((S round)) round (! S :sort 4))
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __chosenAt (round value) Bool)
+(declare-fun __decision (node round value) Bool)
+(declare-fun __isSafeAtPaxos (round value) Bool)
+(declare-fun __left_rnd (node round) Bool)
+(declare-fun __one_a (round) Bool)
+(declare-fun __one_b (node round) Bool)
+(declare-fun __one_b_max_vote (node round round value) Bool)
+(declare-fun __proposal (round value) Bool)
+(declare-fun __showsSafeAtPaxos (quorum_1 round value) Bool)
+(declare-fun __vote (node round value) Bool)
+
+(declare-fun chosenAt (round value) Bool)
+(declare-fun decision (node round value) Bool)
+(declare-fun isSafeAtPaxos (round value) Bool)
+(declare-fun left_rnd (node round) Bool)
+(declare-fun one_a (round) Bool)
+(declare-fun one_b (node round) Bool)
+(declare-fun one_b_max_vote (node round round value) Bool)
+(declare-fun proposal (round value) Bool)
+(declare-fun showsSafeAtPaxos (quorum_1 round value) Bool)
+(declare-fun vote (node round value) Bool)
+
+(define-fun .chosenAt ((V0 round) (V1 value)) Bool (! (__chosenAt V0 V1) :next chosenAt))
+(define-fun .decision ((V0 node) (V1 round) (V2 value)) Bool (! (__decision V0 V1 V2) :next decision))
+(define-fun .isSafeAtPaxos ((V0 round) (V1 value)) Bool (! (__isSafeAtPaxos V0 V1) :next isSafeAtPaxos))
+(define-fun .left_rnd ((V0 node) (V1 round)) Bool (! (__left_rnd V0 V1) :next left_rnd))
+(define-fun .one_a ((V0 round)) Bool (! (__one_a V0) :next one_a))
+(define-fun .one_b ((V0 node) (V1 round)) Bool (! (__one_b V0 V1) :next one_b))
+(define-fun .one_b_max_vote ((V0 node) (V1 round) (V2 round) (V3 value)) Bool (! (__one_b_max_vote V0 V1 V2 V3) :next one_b_max_vote))
+(define-fun .proposal ((V0 round) (V1 value)) Bool (! (__proposal V0 V1) :next proposal))
+(define-fun .showsSafeAtPaxos ((V0 quorum_1) (V1 round) (V2 value)) Bool (! (__showsSafeAtPaxos V0 V1 V2) :next showsSafeAtPaxos))
+(define-fun .vote ((V0 node) (V1 round) (V2 value)) Bool (! (__vote V0 V1 V2) :next vote))
+
+(declare-fun le (round round) Bool)
+(declare-fun max () round)
+(declare-fun member_1 (node quorum_1) Bool)
+(declare-fun member_2 (node quorum_2) Bool)
+(declare-fun negone () round)
+
+(define-fun .le ((V0 round) (V1 round)) Bool (! (le V0 V1) :global true))
+(define-fun .max () round (! max :global true))
+(define-fun .member_1 ((V0 node) (V1 quorum_1)) Bool (! (member_1 V0 V1) :global true))
+(define-fun .member_2 ((V0 node) (V1 quorum_2)) Bool (! (member_2 V0 V1) :global true))
+(define-fun .negone () round (! negone :global true))
+
+(define-fun .def___chosenAt () Bool (! 
+ (let (($v (forall ((V0 round) (V1 value)) (= (__chosenAt V0 V1) (exists ((Q quorum_2)) (forall ((N node)) (=> (member_2 N Q) (__vote N V0 V1))))))
+ ))
+ (and $v))
+ :definition __chosenAt))
+
+(define-fun .def___isSafeAtPaxos () Bool (! 
+ (let (($v (forall ((V0 round) (V1 value)) (= (__isSafeAtPaxos V0 V1) (exists ((Q quorum_1)) (__showsSafeAtPaxos Q V0 V1))))
+ ))
+ (and $v))
+ :definition __isSafeAtPaxos))
+
+(define-fun .def___showsSafeAtPaxos () Bool (! 
+ (let (($v (forall ((V0 quorum_1) (V1 round) (V2 value)) (= (__showsSafeAtPaxos V0 V1 V2) (and (forall ((N node)) (=> (member_1 N V0) (__one_b N V1))) (exists ((MAXRin round)) (or (and (= MAXRin negone) (forall ((MAXR round) (N node) (V value)) (not (and (member_1 N V0) (not (le V1 MAXR)) (__vote N MAXR V))))) (and (not (= MAXRin negone)) (exists ((N node)) (and (member_1 N V0) (not (le V1 MAXRin)) (__vote N MAXRin V2))) (forall ((MAXR round) (N node) (V value)) (=> (and (member_1 N V0) (not (le V1 MAXR)) (__vote N MAXR V)) (le MAXR MAXRin)))))))))
+ ))
+ (and $v))
+ :definition __showsSafeAtPaxos))
+
+(define-fun .def_chosenAt () Bool (! 
+ (let (($v (forall ((V0 round) (V1 value)) (= (chosenAt V0 V1) (exists ((Q quorum_2)) (forall ((N node)) (=> (member_2 N Q) (vote N V0 V1))))))
+ ))
+ (and $v))
+ :definition chosenAt))
+
+(define-fun .def_isSafeAtPaxos () Bool (! 
+ (let (($v (forall ((V0 round) (V1 value)) (= (isSafeAtPaxos V0 V1) (exists ((Q quorum_1)) (showsSafeAtPaxos Q V0 V1))))
+ ))
+ (and $v))
+ :definition isSafeAtPaxos))
+
+(define-fun .def_showsSafeAtPaxos () Bool (! 
+ (let (($v (forall ((V0 quorum_1) (V1 round) (V2 value)) (= (showsSafeAtPaxos V0 V1 V2) (and (forall ((N node)) (=> (member_1 N V0) (one_b N V1))) (exists ((MAXRin round)) (or (and (= MAXRin negone) (forall ((MAXR round) (N node) (V value)) (not (and (member_1 N V0) (not (le V1 MAXR)) (vote N MAXR V))))) (and (not (= MAXRin negone)) (exists ((N node)) (and (member_1 N V0) (not (le V1 MAXRin)) (vote N MAXRin V2))) (forall ((MAXR round) (N node) (V value)) (=> (and (member_1 N V0) (not (le V1 MAXR)) (vote N MAXR V)) (le MAXR MAXRin)))))))))
+ ))
+ (and $v))
+ :definition showsSafeAtPaxos))
+
+(define-fun .prop () Bool (! 
+ (let (($v (forall ((N1 node) (N2 node) (R1 round) (R2 round) (V1 value) (V2 value)) (=> (and (__decision N1 R1 V1) (__decision N2 R2 V2)) (= V1 V2)))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X round)) (le X X)) (forall ((X round) (Y round) (Z round)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X round) (Y round)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X round) (Y round)) (or (le X Y) (le Y X))) (forall ((X round)) (le negone X)) (forall ((X round)) (le X max)) (forall ((Q1 quorum_1) (Q2 quorum_2)) (exists ((N node)) (and (member_1 N Q1) (member_2 N Q2)))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 round)) (= (__one_a V0) false)) (forall ((V0 node) (V1 round) (V2 round) (V3 value)) (= (__one_b_max_vote V0 V1 V2 V3) false)) (forall ((V0 node) (V1 round)) (= (__one_b V0 V1) false)) (forall ((V0 node) (V1 round)) (= (__left_rnd V0 V1) false)) (forall ((V0 round) (V1 value)) (= (__proposal V0 V1) false)) (forall ((V0 node) (V1 round) (V2 value)) (= (__vote V0 V1 V2) false)) (forall ((V0 node) (V1 round) (V2 value)) (= (__decision V0 V1 V2) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:cast_vote () Bool (! 
+ (let (($v (exists ((V__loc:n node) (V__loc:r round) (V__loc:v value)) (and (forall ((V0 node) (V1 round) (V2 value)) (= (vote V0 V1 V2) (ite (and (= V0 V__loc:n) (= V1 V__loc:r) (= V2 V__loc:v)) true (__vote V0 V1 V2)))) (not (= V__loc:r negone)) (not (__left_rnd V__loc:n V__loc:r)) (__proposal V__loc:r V__loc:v)))
+ ))
+ (and $v))
+ :action ext:cast_vote))
+
+(define-fun .action_ext:decide () Bool (! 
+ (let (($v (exists ((V__loc:n node) (V__loc:r round) (V__loc:v value)) (and (forall ((V0 node) (V1 round) (V2 value)) (= (decision V0 V1 V2) (ite (and (= V0 V__loc:n) (= V1 V__loc:r) (= V2 V__loc:v)) true (__decision V0 V1 V2)))) (not (= V__loc:r negone)) (__chosenAt V__loc:r V__loc:v)))
+ ))
+ (and $v))
+ :action ext:decide))
+
+(define-fun .action_ext:join_round () Bool (! 
+ (let (($v (exists ((V__loc:maxr round) (V__loc:n node) (V__loc:r round) (V__loc:v value)) (and (forall ((V0 node) (V1 round) (V2 round) (V3 value)) (= (one_b_max_vote V0 V1 V2 V3) (ite (and (= V0 V__loc:n) (= V1 V__loc:r) (= V2 V__loc:maxr) (= V3 V__loc:v)) true (__one_b_max_vote V0 V1 V2 V3)))) (forall ((V0 node) (V1 round)) (= (one_b V0 V1) (ite (and (= V0 V__loc:n) (= V1 V__loc:r)) true (__one_b V0 V1)))) (forall ((V0 node) (V1 round)) (= (left_rnd V0 V1) (ite (= V0 V__loc:n) (or (__left_rnd V__loc:n V1) (not (le V__loc:r V1))) (__left_rnd V0 V1)))) (not (= V__loc:r negone)) (__one_a V__loc:r) (not (__left_rnd V__loc:n V__loc:r)) (or (and (= V__loc:maxr negone) (forall ((MAXR round) (V value)) (not (and (not (le V__loc:r MAXR)) (__vote V__loc:n MAXR V))))) (and (not (= V__loc:maxr negone)) (not (le V__loc:r V__loc:maxr)) (__vote V__loc:n V__loc:maxr V__loc:v) (forall ((MAXR round) (V value)) (=> (and (not (le V__loc:r MAXR)) (__vote V__loc:n MAXR V)) (le MAXR V__loc:maxr)))))))
+ ))
+ (and $v))
+ :action ext:join_round))
+
+(define-fun .action_ext:propose () Bool (! 
+ (let (($v (exists ((V__loc:r round) (V__loc:v value)) (and (forall ((V0 round) (V1 value)) (= (proposal V0 V1) (ite (and (= V0 V__loc:r) (= V1 V__loc:v)) true (__proposal V0 V1)))) (not (= V__loc:r negone)) (forall ((V value)) (not (__proposal V__loc:r V))) (__isSafeAtPaxos V__loc:r V__loc:v)))
+ ))
+ (and $v))
+ :action ext:propose))
+
+(define-fun .action_ext:send_1a () Bool (! 
+ (let (($v (exists ((V__loc:r round)) (and (forall ((V0 round)) (= (one_a V0) (ite (= V0 V__loc:r) true (__one_a V0)))) (not (= V__loc:r negone))))
+ ))
+ (and $v))
+ :action ext:send_1a))
+

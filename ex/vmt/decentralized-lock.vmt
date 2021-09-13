@@ -1,28 +1,28 @@
-(declare-sort time 0)
 (declare-sort node 0)
+(declare-sort time 0)
 
-(define-fun .time ((S time)) time (! S :sort 0))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .time ((S time)) time (! S :sort 0))
 
 (declare-fun __epoch (node) time)
-(declare-fun __msg (node time) Bool)
 (declare-fun __has_lock (node) Bool)
+(declare-fun __msg (node time) Bool)
 
 (declare-fun epoch (node) time)
-(declare-fun msg (node time) Bool)
 (declare-fun has_lock (node) Bool)
+(declare-fun msg (node time) Bool)
 
 (define-fun .epoch ((V0 node)) time (! (__epoch V0) :next epoch))
-(define-fun .msg ((V0 node) (V1 time)) Bool (! (__msg V0 V1) :next msg))
 (define-fun .has_lock ((V0 node)) Bool (! (__has_lock V0) :next has_lock))
+(define-fun .msg ((V0 node) (V1 time)) Bool (! (__msg V0 V1) :next msg))
 
-(declare-fun zero () time)
-(declare-fun le (time time) Bool)
 (declare-fun first () node)
+(declare-fun le (time time) Bool)
+(declare-fun zero () time)
 
-(define-fun .zero () time (! zero :global true))
-(define-fun .le ((V0 time) (V1 time)) Bool (! (le V0 V1) :global true))
 (define-fun .first () node (! first :global true))
+(define-fun .le ((V0 time) (V1 time)) Bool (! (le V0 V1) :global true))
+(define-fun .zero () time (! zero :global true))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((X node) (Y node)) (not (and (not (= X Y)) (__has_lock X) (__has_lock Y))))

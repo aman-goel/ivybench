@@ -1,0 +1,12 @@
+sort value
+
+mutable relation chosen(value)
+
+init !chosen(V)
+
+transition choose(v:value)
+  modifies chosen
+  & (forall V. !old(chosen(V)))
+  & (chosen(V) <-> old(chosen(V)) | (V = v))
+
+safety [chosen] (forall V1, V2. (chosen(V1) & chosen(V2)) -> (V1 = V2) )

@@ -2,14 +2,14 @@
 
 (define-fun .node ((S node)) node (! S :sort 2))
 
-(declare-fun __message (node node) Bool)
 (declare-fun __has_lock (node) Bool)
+(declare-fun __message (node node) Bool)
 
-(declare-fun message (node node) Bool)
 (declare-fun has_lock (node) Bool)
+(declare-fun message (node node) Bool)
 
-(define-fun .message ((V0 node) (V1 node)) Bool (! (__message V0 V1) :next message))
 (define-fun .has_lock ((V0 node)) Bool (! (__has_lock V0) :next has_lock))
+(define-fun .message ((V0 node) (V1 node)) Bool (! (__message V0 V1) :next message))
 
 (declare-fun start_node () node)
 
@@ -27,15 +27,15 @@
  (and $v))
  :init true))
 
-(define-fun .action_ext:send () Bool (! 
- (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (message V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__message V0 V1)))) (forall ((V0 node)) (= (has_lock V0) (ite (= V0 V__fml:src) false (__has_lock V0)))) (__has_lock V__fml:src)))
- ))
- (and $v))
- :action ext:send))
-
 (define-fun .action_ext:recv () Bool (! 
  (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (message V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) false (__message V0 V1)))) (forall ((V0 node)) (= (has_lock V0) (ite (= V0 V__fml:dst) true (__has_lock V0)))) (__message V__fml:src V__fml:dst)))
  ))
  (and $v))
  :action ext:recv))
+
+(define-fun .action_ext:send () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (message V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__message V0 V1)))) (forall ((V0 node)) (= (has_lock V0) (ite (= V0 V__fml:src) false (__has_lock V0)))) (__has_lock V__fml:src)))
+ ))
+ (and $v))
+ :action ext:send))
 

@@ -1,26 +1,26 @@
-(declare-sort nset 0)
 (declare-sort node 0)
+(declare-sort nset 0)
 
-(define-fun .nset ((S nset)) nset (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .nset ((S nset)) nset (! S :sort 2))
 
-(declare-fun __quorum () nset)
 (declare-fun __isleader (node) Bool)
+(declare-fun __quorum () nset)
 (declare-fun __voted (node node) Bool)
 
-(declare-fun quorum () nset)
 (declare-fun isleader (node) Bool)
+(declare-fun quorum () nset)
 (declare-fun voted (node node) Bool)
 
-(define-fun .quorum () nset (! __quorum :next quorum))
 (define-fun .isleader ((V0 node)) Bool (! (__isleader V0) :next isleader))
+(define-fun .quorum () nset (! __quorum :next quorum))
 (define-fun .voted ((V0 node) (V1 node)) Bool (! (__voted V0 V1) :next voted))
 
-(declare-fun member (node nset) Bool)
 (declare-fun majority (nset) Bool)
+(declare-fun member (node nset) Bool)
 
-(define-fun .member ((V0 node) (V1 nset)) Bool (! (member V0 V1) :global true))
 (define-fun .majority ((V0 nset)) Bool (! (majority V0) :global true))
+(define-fun .member ((V0 node) (V1 nset)) Bool (! (member V0 V1) :global true))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((M node) (N node)) (=> (and (__isleader N) (__isleader M)) (= N M)))
@@ -29,7 +29,7 @@
  :invar-property 0))
 
 (define-fun .axiom () Bool (! 
- (let (($v (forall ((S nset) (T nset) (Y nset)) (=> (and (majority S) (majority Y)) (exists ((N node)) (and (member N S) (member N T)))))
+ (let (($v (forall ((S1 nset) (S2 nset)) (=> (and (majority S1) (majority S2)) (exists ((N node)) (and (member N S1) (member N S2)))))
  ))
  (and $v))
  :axiom true))

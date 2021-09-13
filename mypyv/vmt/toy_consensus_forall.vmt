@@ -1,25 +1,25 @@
-(declare-sort quorum 0)
 (declare-sort node 0)
+(declare-sort quorum 0)
 (declare-sort value 0)
 
-(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .quorum ((S quorum)) quorum (! S :sort 1))
 (define-fun .value ((S value)) value (! S :sort 2))
 
+(declare-fun __decided (value) Bool)
+(declare-fun __vote (node value) Bool)
 (declare-fun __voted (node) Bool)
 (declare-fun __voting_quorum () quorum)
-(declare-fun __vote (node value) Bool)
-(declare-fun __decided (value) Bool)
 
+(declare-fun decided (value) Bool)
+(declare-fun vote (node value) Bool)
 (declare-fun voted (node) Bool)
 (declare-fun voting_quorum () quorum)
-(declare-fun vote (node value) Bool)
-(declare-fun decided (value) Bool)
 
+(define-fun .decided ((V0 value)) Bool (! (__decided V0) :next decided))
+(define-fun .vote ((V0 node) (V1 value)) Bool (! (__vote V0 V1) :next vote))
 (define-fun .voted ((V0 node)) Bool (! (__voted V0) :next voted))
 (define-fun .voting_quorum () quorum (! __voting_quorum :next voting_quorum))
-(define-fun .vote ((V0 node) (V1 value)) Bool (! (__vote V0 V1) :next vote))
-(define-fun .decided ((V0 value)) Bool (! (__decided V0) :next decided))
 
 (declare-fun member (node quorum) Bool)
 

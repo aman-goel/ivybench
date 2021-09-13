@@ -1,0 +1,54 @@
+sort value
+sort acceptor
+sort quorum
+sort ballot
+
+immutable relation le(ballot, ballot) @no_minimize
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+immutable constant negone:ballot
+axiom le(negone, X)
+immutable constant max:ballot
+axiom le(X, max)
+
+immutable relation member(acceptor, quorum)
+axiom forall Q1:quorum, Q2:quorum. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+mutable relation votes(acceptor, ballot, value)
+mutable function maxBal(acceptor):ballot
+
+# Definitions
+derived relation chosenAt(ballot, value): chosenAt(B, V) <-> exists Q. forall A. member(A, Q) -> votes(A, B, V)
+derived relation chosen(value): chosen(V) <-> exists B. chosenAt(B, V)
+derived relation showsSafeAt(quorum, ballot, value): showsSafeAt(Q, B, V) <-> ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+													(exists C:ballot. !le(B, C) & 
+														(C != negone -> exists A:acceptor. member(A, Q) & votes(A, C, V)) & 
+														(forall D:ballot. (!le(D, C) & !le(B, D)) -> 
+															(forall A:acceptor. member(A, Q) -> (forall Vd:value. !votes(A, D, Vd))))))
+derived relation isSafeAt(ballot, value): isSafeAt(B, V) <-> exists Q:quorum. showsSafeAt(Q, B, V)
+
+init !votes(A, B, V)
+init (maxBal(A) = negone)
+
+transition increaseMaxBal(a:acceptor, b:ballot)
+   modifies maxBal
+   & (b != negone)
+   & old(!le(b, maxBal(a)))
+   & (A!=a -> maxBal(A) = old(maxBal(A)))
+   & (A=a -> maxBal(A) = b)
+
+transition voteFor(a:acceptor, b:ballot, v:value)
+   modifies votes, maxBal
+   & (b != negone)
+   & old(le(maxBal(a), b))
+   & old(!(exists V. votes(a, b, V)))
+   & old(forall C:acceptor. (C != a) -> (forall V:value. votes(C, b, V) -> V = v))
+   & old(isSafeAt(b, v))
+   & (votes(A, B, V) <-> old(votes(A, B, V)) | A=a & B=b & V=v)
+   & (A!=a -> maxBal(A) = old(maxBal(A)))
+   & (A=a -> maxBal(A) = b)
+
+# Property
+safety forall V1, V2. chosen(V1) & chosen(V2) -> (V1 = V2)

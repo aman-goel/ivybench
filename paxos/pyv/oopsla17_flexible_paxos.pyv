@@ -1,0 +1,124 @@
+
+sort round
+sort value
+# two types of quorums
+sort quorum_1
+sort quorum_2
+sort node
+
+immutable relation le(round, round)
+axiom le(X,X)                        # Reflexivity
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)  # Transitivity
+axiom le(X, Y) & le(Y, X) -> X = Y    # Anti-symmetry
+axiom le(X, Y) | le(Y, X)             # Totality
+
+immutable constant negone:round
+axiom le(negone, X)
+immutable constant max:round
+axiom le(X, max)
+
+immutable relation member_1(node, quorum_1)
+immutable relation member_2(node, quorum_2)
+# quorums of different type intersect
+axiom forall Q1:quorum_1, Q2:quorum_2 . exists N:node. member_1(N, Q1) & member_2(N, Q2)
+
+mutable relation one_a(round)
+mutable relation one_b_max_vote(node, round, round, value)
+mutable relation one_b(node, round) # := exists RMAX, V. one_b_max_vote(N,R,RMAX,V)
+mutable relation left_rnd(node, round) # := exists R2, RMAX, V. !le(R2,R) & one_b_max_vote(N,R,RMAX,V)
+mutable relation proposal(round, value) # 2a
+mutable relation vote(node, round, value) # 2b
+mutable relation decision(node, round, value) # got 2b from a quorum
+
+init !one_a(R)
+init !one_b_max_vote(N,R1,R2,V)
+init !one_b(N,R)
+init !left_rnd(N,R)
+init !proposal(R,V)
+init !vote(N,R,V)
+init !decision(N,R,V)
+
+transition send_1a(r:round)
+  modifies one_a
+    & r != negone
+    & (forall R . one_a(R) <-> old(one_a(R)) | R=r)
+
+transition join_round(n:node, r:round, maxr:round, v:value)
+  modifies one_b_max_vote, one_b, left_rnd
+    & old(
+      & r != negone
+      & one_a(r)
+      & !left_rnd(n,r)
+      & ((maxr = negone & forall MAXR:round,V:value. !(!le(r,MAXR) & vote(n,MAXR,V))) |
+                    (maxr != negone & !le(r,maxr) & vote(n,maxr,v) &
+                    (forall MAXR:round,V:value. (!le(r,MAXR) & vote(n,MAXR,V)) -> le(MAXR,maxr))
+                   ))
+    )
+  & (forall A,B,C,D . one_b_max_vote(A,B,C,D) <->
+      ((A=n & B=r & C=maxr & D=v) | old(one_b_max_vote(A,B,C,D))))
+  & (forall A,B . one_b(A,B) <->
+      ((A=n & B=r) | old(one_b(A,B))))
+  & (forall A,R . left_rnd(A,R) <->
+      (if A=n then old(left_rnd(n,R)) | !le(r,R) else old(left_rnd(A,R))))
+
+
+transition propose(r:round, q:quorum_1, maxr:round, v:value)
+  modifies proposal
+  & old(
+        & r != negone
+        & !proposal(r,V)
+        & (forall N:node. member_1(N, q) -> one_b(N,r))
+        & ((maxr = negone & forall N:node,MAXR:round,V:value. !(member_1(N, q) & !le(r,MAXR) & vote(N,MAXR,V))) |
+                    (maxr != negone &
+                    (exists N:node. member_1(N, q) & !le(r,maxr) & vote(N,maxr,v)) &
+                    (forall N:node,MAXR:round,V:value. (member_1(N, q) & !le(r,MAXR) & vote(N,MAXR,V)) -> le(MAXR,maxr))
+                   ))
+      )
+  & (forall A,B . proposal(A,B) <-> old(proposal(A,B)) | (A=r & B=v))
+
+transition cast_vote(n:node, v:value, r:round)
+  modifies vote
+  & old(
+        & r != negone
+        & !left_rnd(n,r)
+        & proposal(r, v)
+  )
+  & (forall A,B,C . vote(A,B,C) <-> old(vote(A,B,C)) | (A=n & B=r & C=v))
+
+transition decide(n:node, r:round, v:value, q:quorum_2)
+  modifies decision
+  & old(
+        & r != negone
+        & (forall N . member_2(N, q) -> vote(N, r, v))
+  )
+  & (forall A,B,C . decision(A,B,C) <-> old(decision(A,B,C)) | (A=n & B=r & C=v))
+
+# invariant property:
+safety (
+    decision(N1,R1,V1) &
+    decision(N2,R2,V2)
+) -> V1 = V2
+
+## proposals are unique per round
+#invariant proposal(R,V1) & proposal(R,V2) -> V1 = V2
+#
+## only vote for proposed values
+#invariant vote(N,R,V) -> proposal(R,V)
+#
+## decisions come from quorums of votes
+#invariant forall R:round, V:value. (exists N:node. decision(N,R,V)) -> exists Q:quorum_2. forall N:node. member_2(N, Q) -> vote(N,R,V)
+#
+## properties of negone
+#invariant !vote(N,negone,V)
+#
+#invariant one_b_max_vote(N,R,RMAX,V) -> one_b(N,R)
+#invariant one_b(N,R2) & !le(R2,R1) -> left_rnd(N,R1)
+#
+#invariant one_b_max_vote(N,R2,negone,V1) & !le(R2,R1) -> !vote(N,R1,V2)
+#invariant one_b_max_vote(N,R,RMAX,V) & RMAX != negone -> !le(R,RMAX) & vote(N,RMAX,V)
+#invariant one_b_max_vote(N,R,RMAX,V) & !le(R,ROTHER) & !le(ROTHER,RMAX) -> !vote(N,ROTHER,VOTHER)
+#
+#invariant forall R1:round, R2:round, V1:value, V2:value, Q:quorum_2. !le(R2,R1) & proposal(R2,V2) & V1 != V2 ->
+#    exists N . member_2(N,Q) & left_rnd(N,R1) & !vote(N,R1,V1)
+
+

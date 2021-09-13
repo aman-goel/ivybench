@@ -1,0 +1,204 @@
+#lang ivy1.7
+
+################################################################################
+#
+# Modules that should probably come from a standard library
+#
+################################################################################
+
+################################################################################
+#
+# Module for axiomatizing a total order
+#
+################################################################################
+
+module total_order(r) = {
+    axiom r(X,X)                        # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+
+################################################################################
+#
+# Types, relations and functions describing state of the network
+#
+################################################################################
+
+type votemap
+type inst
+type round
+type value
+type quorum
+type node
+
+relation le(X:round, Y:round)
+instantiate total_order(le)
+
+individual negone:round
+axiom le(negone, X)
+individual max:round
+axiom le(X, max)
+
+relation member(N:node, Q:quorum)
+axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)
+
+relation one_a(R:round)
+relation one_b_msg(N:node, R1:round, M:votemap)
+relation left_round(N:node, R:round)
+relation joined_round(N:node, R:round)
+relation proposal(I:inst, R:round, V:value) # 2a
+relation active(R:round)  # round R has received a quorum of 1b and can now propose new values
+relation vote(N:node, I:inst, R:round, V:value) # 2b
+relation decision(N:node, I:inst, R:round, V:value) # got 2b from a quorum
+individual maxr(M:votemap,I:inst) : round
+individual maxv(M:votemap,I:inst) : value
+
+after init {
+	one_a(R) := false;
+	one_b_msg(N,R1,M) := false;
+	left_round(N,R) := false;
+	joined_round(N,R) := false;
+	proposal(I,R,V) := false;
+	vote(N,I,R,V) := false;
+	decision(N,I,R,V) := false;
+	active(R) := false;
+}
+
+# Definitions for ivy to vmt
+relation chosenAt(I:inst, R:round, V:value) = exists Q. forall N. member(N, Q) -> vote(N, I, R, V)
+relation showsSafeAtMultiPaxos(Qin:quorum, Rin:round, Min:votemap) = 
+(
+	(forall N. member(N, Qin) -> joined_round(N,Rin)) &
+	(forall I:inst. (
+        ( maxr(Min,I) = negone & forall N:node,MAXR:round,V:value. ~(member(N, Qin) & ~le(Rin,MAXR) & vote(N,I,MAXR,V)) ) |
+        ( (exists N:node.  member(N, Qin) & ~le(Rin,maxr(Min,I)) & vote(N,I,maxr(Min,I),maxv(Min,I))) &
+          (forall N,MAXR,V.  member(N, Qin) & ~le(Rin,MAXR) & vote(N,I,MAXR,V) -> le(MAXR,maxr(Min,I))) )
+    ))
+)
+relation isSafeAtMultiPaxos(R:round, M:votemap) = exists Q:quorum . showsSafeAtMultiPaxos(Q, R, M)
+
+
+action send_1a = {
+  local r:round {
+    # a proposer selects a round and sends a message asking nodes to join the round
+    assume r ~= negone;
+    one_a(r) := true
+  }
+}
+
+
+action join_round = {
+  local n:node, r:round, m:votemap {
+    # receive 1a and answer with 1b
+    assume r ~= negone;
+    assume one_a(r);
+    assume ~left_round(n,r);
+
+    # find the maximal vote in a round less than r, for all instances
+    assume forall I:inst. (
+        ( maxr(m,I) = negone & forall R,V. ~(vote(n,I,R,V) & ~le(r,R)) ) |
+        ( vote(n,I,maxr(m,I),maxv(m,I)) & ~le(r,maxr(m,I)) &
+          forall R,V. vote(n,I,R,V) & ~le(r,R) -> le(R,maxr(m,I)) )
+    );
+    # send the 1b message
+    one_b_msg(n,r,m) := true;
+    # update code:
+    left_round(n,R) := left_round(n,R) | ~le(r,R);
+    joined_round(n,r) := true
+  }
+}
+
+action receive_join_acks = {
+  local r:round, m:votemap {
+    # receive a quorum of 1b's, activate round and propose for instances that have choosable values at lower rounds
+    assume r ~= negone;
+    assume ~active(r); # this happens only once
+    assume isSafeAtMultiPaxos(r, m);
+    
+    # activate round
+    active(r) := true;
+    # propose all choosable values
+    proposal(I, r, V) := proposal(I, r, V) | (maxr(m,I) ~= negone & V = maxv(m,I))
+  }
+}
+
+
+action propose = {
+  local r:round, i:inst, v:value {
+    # propose a new arbitrary value an available instance in an active round
+    assume r ~= negone;
+    assume active(r);
+    assume ~proposal(i, r, V);
+    proposal(i, r, v) := true
+  }
+}
+
+
+action cast_vote = {
+  local n:node, v:value, r:round, i:inst {
+    # receive a 2a and send 2b
+    assume r ~= negone;
+    assume ~left_round(n,r);
+    assume proposal(i, r, v);
+    vote(n, i, r, v) := true
+  }
+}
+
+
+action decide = {
+  local n:node, r:round, v:value, i:inst {
+    # get 2b from a quorum
+    assume r ~= negone;
+    assume chosenAt(i, r, v);
+    decision(n, i, r, v) := true
+  }
+}
+
+
+export send_1a
+export join_round
+export receive_join_acks
+export propose
+export cast_vote
+export decide
+
+# safety property:
+conjecture (
+    decision(N1,I,R1,V1) &
+    decision(N2,I,R2,V2)
+) -> V1 = V2
+
+
+### swiss invariant (to confirm)
+#conjecture proposal(I,R,V) -> active(R)
+#
+## proposals are unique per round
+#conjecture proposal(I,R,V1) & proposal(I,R,V2) -> V1 = V2
+#
+## only vote for proposed values
+#conjecture vote(N,I,R,V) -> proposal(I,R,V)
+#
+## decisions come from quorums of votes:
+#conjecture forall R:round, V:value. (exists N:node. decision(N,I,R,V)) -> exists Q:quorum. forall N:node. member(N, Q) -> vote(N,I,R,V)
+#
+## properties of negone
+#conjecture ~vote(N,I,negone,V)
+#
+## properties of joined_round, left_round
+#conjecture joined_round(N,R2) & ~le(R2,R1) -> left_round(N,R1)
+#conjecture one_b_msg(N,R,M) -> joined_round(N,R)
+#
+## properties of one_b_msg
+#conjecture one_b_msg(N,R2,M) & maxr(M,I) = negone & ~le(R2,R1) -> ~vote(N,I,R1,V2)
+#conjecture one_b_msg(N,R, M) & maxr(M,I) ~= negone -> ~le(R,maxr(M,I)) & vote(N,I,maxr(M,I),maxv(M,I))
+#conjecture one_b_msg(N,R, M) & ~le(R,ROTHER) & ~le(ROTHER,maxr(M,I)) -> ~vote(N,I,ROTHER,VOTHER)
+#
+## property of choosable and active: if R2>R1 is active and V is not proposed at I, then it's not choosable at R1
+#conjecture forall I:inst, R1:round, R2:round, V:value, Q:quorum. (
+#   ~le(R2,R1) & active(R2) & ~proposal(I,R2,V) -> (
+#        exists N:node. member(N,Q) & left_round(N,R1) & ~vote(N,I,R1,V)
+#    )
+#)
+###

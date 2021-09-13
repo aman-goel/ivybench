@@ -1,46 +1,114 @@
-(declare-sort quorum_a 0)
 (declare-sort node 0)
+(declare-sort quorum_a 0)
 (declare-sort quorum_b 0)
 
-(define-fun .quorum_a ((S quorum_a)) quorum_a (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .quorum_a ((S quorum_a)) quorum_a (! S :sort 2))
 (define-fun .quorum_b ((S quorum_b)) quorum_b (! S :sort 2))
 
-(declare-fun __sent_msg (node node) Bool)
 (declare-fun __accept (node) Bool)
+(declare-fun __accepted () Bool)
+(declare-fun __chosenAtA (node) Bool)
+(declare-fun __chosenAtB (node) Bool)
 (declare-fun __rcv_msg (node node) Bool)
+(declare-fun __sentMsgAt (node) Bool)
+(declare-fun __sent_msg (node node) Bool)
 (declare-fun __sent_msg_proj (node) Bool)
 
-(declare-fun sent_msg (node node) Bool)
 (declare-fun accept (node) Bool)
+(declare-fun accepted () Bool)
+(declare-fun chosenAtA (node) Bool)
+(declare-fun chosenAtB (node) Bool)
 (declare-fun rcv_msg (node node) Bool)
+(declare-fun sentMsgAt (node) Bool)
+(declare-fun sent_msg (node node) Bool)
 (declare-fun sent_msg_proj (node) Bool)
 
-(define-fun .sent_msg ((V0 node) (V1 node)) Bool (! (__sent_msg V0 V1) :next sent_msg))
 (define-fun .accept ((V0 node)) Bool (! (__accept V0) :next accept))
+(define-fun .accepted () Bool (! __accepted :next accepted))
+(define-fun .chosenAtA ((V0 node)) Bool (! (__chosenAtA V0) :next chosenAtA))
+(define-fun .chosenAtB ((V0 node)) Bool (! (__chosenAtB V0) :next chosenAtB))
 (define-fun .rcv_msg ((V0 node) (V1 node)) Bool (! (__rcv_msg V0 V1) :next rcv_msg))
+(define-fun .sentMsgAt ((V0 node)) Bool (! (__sentMsgAt V0) :next sentMsgAt))
+(define-fun .sent_msg ((V0 node) (V1 node)) Bool (! (__sent_msg V0 V1) :next sent_msg))
 (define-fun .sent_msg_proj ((V0 node)) Bool (! (__sent_msg_proj V0) :next sent_msg_proj))
 
+(declare-fun member_a (node quorum_a) Bool)
 (declare-fun member_b (node quorum_b) Bool)
 (declare-fun member_fa (node) Bool)
-(declare-fun member_a (node quorum_a) Bool)
-(declare-fun member_fs (node) Bool)
-(declare-fun rcv_init (node) Bool)
 (declare-fun member_fc (node) Bool)
 (declare-fun member_fi (node) Bool)
+(declare-fun member_fs (node) Bool)
+(declare-fun rcv_init (node) Bool)
+(declare-fun received_init () Bool)
 
+(define-fun .member_a ((V0 node) (V1 quorum_a)) Bool (! (member_a V0 V1) :global true))
 (define-fun .member_b ((V0 node) (V1 quorum_b)) Bool (! (member_b V0 V1) :global true))
 (define-fun .member_fa ((V0 node)) Bool (! (member_fa V0) :global true))
-(define-fun .member_a ((V0 node) (V1 quorum_a)) Bool (! (member_a V0 V1) :global true))
-(define-fun .member_fs ((V0 node)) Bool (! (member_fs V0) :global true))
-(define-fun .rcv_init ((V0 node)) Bool (! (rcv_init V0) :global true))
 (define-fun .member_fc ((V0 node)) Bool (! (member_fc V0) :global true))
 (define-fun .member_fi ((V0 node)) Bool (! (member_fi V0) :global true))
+(define-fun .member_fs ((V0 node)) Bool (! (member_fs V0) :global true))
+(define-fun .rcv_init ((V0 node)) Bool (! (rcv_init V0) :global true))
+(define-fun .received_init () Bool (! received_init :global true))
 
 (declare-fun __fml:nondet () Bool)
 
+(define-fun .def___accepted () Bool (! 
+ (let (($v (= __accepted (exists ((N node)) (and (not (member_fs N)) (not (member_fa N)) (__accept N))))
+ ))
+ (and $v))
+ :definition __accepted))
+
+(define-fun .def___chosenAtA () Bool (! 
+ (let (($v (forall ((V0 node)) (= (__chosenAtA V0) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (__rcv_msg N V0))))))
+ ))
+ (and $v))
+ :definition __chosenAtA))
+
+(define-fun .def___chosenAtB () Bool (! 
+ (let (($v (forall ((V0 node)) (= (__chosenAtB V0) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (__rcv_msg N V0))))))
+ ))
+ (and $v))
+ :definition __chosenAtB))
+
+(define-fun .def___sentMsgAt () Bool (! 
+ (let (($v (forall ((V0 node)) (= (__sentMsgAt V0) (exists ((D node)) (__sent_msg V0 D))))
+ ))
+ (and $v))
+ :definition __sentMsgAt))
+
+(define-fun .def_accepted () Bool (! 
+ (let (($v (= accepted (exists ((N node)) (and (not (member_fs N)) (not (member_fa N)) (accept N))))
+ ))
+ (and $v))
+ :definition accepted))
+
+(define-fun .def_chosenAtA () Bool (! 
+ (let (($v (forall ((V0 node)) (= (chosenAtA V0) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V0))))))
+ ))
+ (and $v))
+ :definition chosenAtA))
+
+(define-fun .def_chosenAtB () Bool (! 
+ (let (($v (forall ((V0 node)) (= (chosenAtB V0) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V0))))))
+ ))
+ (and $v))
+ :definition chosenAtB))
+
+(define-fun .def_received_init () Bool (! 
+ (let (($v (= received_init (exists ((M node)) (and (not (member_fs M)) (not (member_fa M)) (rcv_init M))))
+ ))
+ (and $v))
+ :definition received_init))
+
+(define-fun .def_sentMsgAt () Bool (! 
+ (let (($v (forall ((V0 node)) (= (sentMsgAt V0) (exists ((D node)) (sent_msg V0 D))))
+ ))
+ (and $v))
+ :definition sentMsgAt))
+
 (define-fun .prop () Bool (! 
- (let (($v (=> (exists ((N node)) (and (not (member_fs N)) (not (member_fa N)) (__accept N))) (exists ((M node)) (and (not (member_fs M)) (not (member_fa M)) (rcv_init M))))
+ (let (($v (=> __accepted received_init)
  ))
  (and $v))
  :invar-property 0))
@@ -58,28 +126,10 @@
  :init true))
 
 (define-fun .action_ext:faulty_send_a () Bool (! 
- (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fa V__fml:n)))
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sentMsgAt V__fml:n) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fa V__fml:n)))
  ))
  (and $v))
  :action ext:faulty_send_a))
-
-(define-fun .action_ext:receive_init () Bool (! 
- (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) true (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) true (__sent_msg_proj V0)))) (rcv_init V__fml:n)))
- ))
- (and $v))
- :action ext:receive_init))
-
-(define-fun .action_ext:receive_init_i () Bool (! 
- (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fi V__fml:n) (rcv_init V__fml:n)))
- ))
- (and $v))
- :action ext:receive_init_i))
-
-(define-fun .action_ext:receive_msg_c () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg_proj V0)))) (member_fc V__fml:n) (__sent_msg V__fml:s V__fml:n)))
- ))
- (and $v))
- :action ext:receive_msg_c))
 
 (define-fun .action_ext:faulty_send_s () Bool (! 
  (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) true (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) true (__sent_msg_proj V0)))) (member_fs V__fml:n)))
@@ -93,15 +143,33 @@
  (and $v))
  :action ext:faulty_state_sa))
 
-(define-fun .action_ext:receive_msg_i () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (exists ((D node)) (__sent_msg V__fml:n D)) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n)))))) (__sent_msg V0 V1)))) (member_fi V__fml:n) (__sent_msg V__fml:s V__fml:n)))
+(define-fun .action_ext:receive_init () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) true (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) true (__sent_msg_proj V0)))) (rcv_init V__fml:n)))
  ))
  (and $v))
- :action ext:receive_msg_i))
+ :action ext:receive_init))
+
+(define-fun .action_ext:receive_init_i () Bool (! 
+ (let (($v (exists ((V__fml:n node)) (and (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sentMsgAt V__fml:n) __fml:nondet) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) __fml:nondet) (__sent_msg V0 V1)))) (member_fi V__fml:n) (rcv_init V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_init_i))
 
 (define-fun .action_ext:receive_msg () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (exists ((B quorum_b)) (forall ((N node)) (=> (member_b N B) (rcv_msg N V__fml:n))))) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n))))) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (exists ((A quorum_a)) (forall ((N node)) (=> (member_a N A) (rcv_msg N V__fml:n))))) (__sent_msg_proj V0)))) (__sent_msg V__fml:s V__fml:n)))
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (chosenAtB V__fml:n)) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (chosenAtA V__fml:n)) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (chosenAtA V__fml:n)) (__sent_msg_proj V0)))) (__sent_msg V__fml:s V__fml:n)))
  ))
  (and $v))
  :action ext:receive_msg))
+
+(define-fun .action_ext:receive_msg_c () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (chosenAtB V__fml:n)) (__accept V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (chosenAtA V__fml:n))) (__sent_msg V0 V1)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sent_msg_proj V__fml:n) (and __fml:nondet (chosenAtA V__fml:n))) (__sent_msg_proj V0)))) (member_fc V__fml:n) (__sent_msg V__fml:s V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_msg_c))
+
+(define-fun .action_ext:receive_msg_i () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:s node)) (and (forall ((V0 node) (V1 node)) (= (rcv_msg V0 V1) (ite (and (= V0 V__fml:s) (= V1 V__fml:n)) true (__rcv_msg V0 V1)))) (forall ((V0 node)) (= (accept V0) (ite (= V0 V__fml:n) (or (__accept V__fml:n) (chosenAtB V__fml:n)) (__accept V0)))) (forall ((V0 node)) (= (sent_msg_proj V0) (ite (= V0 V__fml:n) (or (__sentMsgAt V__fml:n) (and __fml:nondet (chosenAtA V__fml:n))) (__sent_msg_proj V0)))) (forall ((V0 node) (V1 node)) (= (sent_msg V0 V1) (ite (= V0 V__fml:n) (or (__sent_msg V__fml:n V1) (and __fml:nondet (chosenAtA V__fml:n))) (__sent_msg V0 V1)))) (member_fi V__fml:n) (__sent_msg V__fml:s V__fml:n)))
+ ))
+ (and $v))
+ :action ext:receive_msg_i))
 

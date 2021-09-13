@@ -1,31 +1,31 @@
-(declare-sort quorum 0)
 (declare-sort node 0)
+(declare-sort quorum 0)
 (declare-sort value 0)
 
-(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .quorum ((S quorum)) quorum (! S :sort 1))
 (define-fun .value ((S value)) value (! S :sort 2))
 
-(declare-fun __votes (node node) Bool)
-(declare-fun __vote_request_msg (node node) Bool)
-(declare-fun __vote_msg (node node) Bool)
-(declare-fun __leader (node) Bool)
-(declare-fun __voted (node) Bool)
 (declare-fun __decided (node value) Bool)
+(declare-fun __leader (node) Bool)
+(declare-fun __vote_msg (node node) Bool)
+(declare-fun __vote_request_msg (node node) Bool)
+(declare-fun __voted (node) Bool)
+(declare-fun __votes (node node) Bool)
 
-(declare-fun votes (node node) Bool)
-(declare-fun vote_request_msg (node node) Bool)
-(declare-fun vote_msg (node node) Bool)
-(declare-fun leader (node) Bool)
-(declare-fun voted (node) Bool)
 (declare-fun decided (node value) Bool)
+(declare-fun leader (node) Bool)
+(declare-fun vote_msg (node node) Bool)
+(declare-fun vote_request_msg (node node) Bool)
+(declare-fun voted (node) Bool)
+(declare-fun votes (node node) Bool)
 
-(define-fun .votes ((V0 node) (V1 node)) Bool (! (__votes V0 V1) :next votes))
-(define-fun .vote_request_msg ((V0 node) (V1 node)) Bool (! (__vote_request_msg V0 V1) :next vote_request_msg))
-(define-fun .vote_msg ((V0 node) (V1 node)) Bool (! (__vote_msg V0 V1) :next vote_msg))
-(define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
-(define-fun .voted ((V0 node)) Bool (! (__voted V0) :next voted))
 (define-fun .decided ((V0 node) (V1 value)) Bool (! (__decided V0 V1) :next decided))
+(define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
+(define-fun .vote_msg ((V0 node) (V1 node)) Bool (! (__vote_msg V0 V1) :next vote_msg))
+(define-fun .vote_request_msg ((V0 node) (V1 node)) Bool (! (__vote_request_msg V0 V1) :next vote_request_msg))
+(define-fun .voted ((V0 node)) Bool (! (__voted V0) :next voted))
+(define-fun .votes ((V0 node) (V1 node)) Bool (! (__votes V0 V1) :next votes))
 
 (declare-fun member (node quorum) Bool)
 
@@ -67,15 +67,15 @@
  (and $v))
  :action ext:recv_vote))
 
-(define-fun .action_ext:send_vote () Bool (! 
- (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (vote_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__vote_msg V0 V1)))) (forall ((V0 node)) (= (voted V0) (ite (= V0 V__fml:src) true (__voted V0)))) (not (__voted V__fml:src)) (__vote_request_msg V__fml:dst V__fml:src) (forall ((X0 node) (X1 node)) (or (not (vote_request_msg X0 X1)) (__vote_request_msg X0 X1) (= X0 V__fml:src))) (forall ((X0 node) (X1 node)) (or (not (vote_request_msg X0 X1)) (__vote_request_msg X0 X1) (= X1 V__fml:dst))) (forall ((X0 node) (X1 node)) (or (vote_request_msg X0 X1) (not (__vote_request_msg X0 X1)) (= X0 V__fml:src))) (forall ((X0 node) (X1 node)) (or (vote_request_msg X0 X1) (not (__vote_request_msg X0 X1)) (= X1 V__fml:dst)))))
- ))
- (and $v))
- :action ext:send_vote))
-
 (define-fun .action_ext:send_request_vote () Bool (! 
  (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (forall ((V0 node) (V1 node)) (= (vote_request_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__vote_request_msg V0 V1)))))
  ))
  (and $v))
  :action ext:send_request_vote))
+
+(define-fun .action_ext:send_vote () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (vote_msg V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__vote_msg V0 V1)))) (forall ((V0 node)) (= (voted V0) (ite (= V0 V__fml:src) true (__voted V0)))) (not (__voted V__fml:src)) (__vote_request_msg V__fml:dst V__fml:src) (forall ((X0 node) (X1 node)) (or (not (vote_request_msg X0 X1)) (__vote_request_msg X0 X1) (= X0 V__fml:src))) (forall ((X0 node) (X1 node)) (or (not (vote_request_msg X0 X1)) (__vote_request_msg X0 X1) (= X1 V__fml:dst))) (forall ((X0 node) (X1 node)) (or (vote_request_msg X0 X1) (not (__vote_request_msg X0 X1)) (= X0 V__fml:src))) (forall ((X0 node) (X1 node)) (or (vote_request_msg X0 X1) (not (__vote_request_msg X0 X1)) (= X1 V__fml:dst)))))
+ ))
+ (and $v))
+ :action ext:send_vote))
 

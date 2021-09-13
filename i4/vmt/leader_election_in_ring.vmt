@@ -13,12 +13,12 @@
 (define-fun .leader ((V0 node)) Bool (! (__leader V0) :next leader))
 (define-fun .pending ((V0 id) (V1 node)) Bool (! (__pending V0 V1) :next pending))
 
-(declare-fun le (id id) Bool)
 (declare-fun idn (node) id)
+(declare-fun le (id id) Bool)
 (declare-fun ring.btw (node node node) Bool)
 
-(define-fun .le ((V0 id) (V1 id)) Bool (! (le V0 V1) :global true))
 (define-fun .idn ((V0 node)) id (! (idn V0) :global true))
+(define-fun .le ((V0 id) (V1 id)) Bool (! (le V0 V1) :global true))
 (define-fun .ring.btw ((V0 node) (V1 node) (V2 node)) Bool (! (ring.btw V0 V1 V2) :global true))
 
 (declare-fun __ts0_a () Bool)
@@ -47,15 +47,15 @@
  (and $v))
  :action ext:become_leader))
 
-(define-fun .action_ext:send () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:n1 node)) (and (forall ((V0 id) (V1 node)) (= (pending V0 V1) (ite (and (= V0 (idn V__fml:n)) (= V1 V__fml:n1)) true (__pending V0 V1)))) (not (= V__fml:n V__fml:n1)) (forall ((Z node)) (=> (and (not (= Z V__fml:n)) (not (= Z V__fml:n1))) (ring.btw V__fml:n V__fml:n1 Z)))))
- ))
- (and $v))
- :action ext:send))
-
 (define-fun .action_ext:receive () Bool (! 
  (let (($v (exists ((V__fml:m id) (V__fml:n node) (V__fml:n1 node)) (and (forall ((V0 id) (V1 node)) (= (pending V0 V1) (ite __ts0_a (ite (and (= V0 V__fml:m) (= V1 V__fml:n1)) true (__pending V0 V1)) (__pending V0 V1)))) (= __ts0_a (le (idn V__fml:n) V__fml:m)) (__pending V__fml:m V__fml:n) (not (= V__fml:n V__fml:n1)) (forall ((Z node)) (=> (and (not (= Z V__fml:n)) (not (= Z V__fml:n1))) (ring.btw V__fml:n V__fml:n1 Z)))))
  ))
  (and $v))
  :action ext:receive))
+
+(define-fun .action_ext:send () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:n1 node)) (and (forall ((V0 id) (V1 node)) (= (pending V0 V1) (ite (and (= V0 (idn V__fml:n)) (= V1 V__fml:n1)) true (__pending V0 V1)))) (not (= V__fml:n V__fml:n1)) (forall ((Z node)) (=> (and (not (= Z V__fml:n)) (not (= Z V__fml:n1))) (ring.btw V__fml:n V__fml:n1 Z)))))
+ ))
+ (and $v))
+ :action ext:send))
 

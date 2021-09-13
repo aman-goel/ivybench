@@ -1,8 +1,8 @@
-(declare-sort server 0)
 (declare-sort client 0)
+(declare-sort server 0)
 
-(define-fun .server ((S server)) server (! S :sort 1))
 (define-fun .client ((S client)) client (! S :sort 2))
+(define-fun .server ((S server)) server (! S :sort 1))
 
 (declare-fun __link (client server) Bool)
 (declare-fun __semaphore (server) Bool)

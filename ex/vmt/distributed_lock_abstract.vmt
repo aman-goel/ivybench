@@ -4,27 +4,27 @@
 (define-fun .epoch ((S epoch)) epoch (! S :sort 0))
 (define-fun .node ((S node)) node (! S :sort 2))
 
-(declare-fun __held (node) Bool)
-(declare-fun __transfer_msg (epoch node) Bool)
-(declare-fun __locked (epoch node) Bool)
 (declare-fun __gt (epoch node) Bool)
+(declare-fun __held (node) Bool)
+(declare-fun __locked (epoch node) Bool)
+(declare-fun __transfer_msg (epoch node) Bool)
 
-(declare-fun held (node) Bool)
-(declare-fun transfer_msg (epoch node) Bool)
-(declare-fun locked (epoch node) Bool)
 (declare-fun gt (epoch node) Bool)
+(declare-fun held (node) Bool)
+(declare-fun locked (epoch node) Bool)
+(declare-fun transfer_msg (epoch node) Bool)
 
-(define-fun .held ((V0 node)) Bool (! (__held V0) :next held))
-(define-fun .transfer_msg ((V0 epoch) (V1 node)) Bool (! (__transfer_msg V0 V1) :next transfer_msg))
-(define-fun .locked ((V0 epoch) (V1 node)) Bool (! (__locked V0 V1) :next locked))
 (define-fun .gt ((V0 epoch) (V1 node)) Bool (! (__gt V0 V1) :next gt))
+(define-fun .held ((V0 node)) Bool (! (__held V0) :next held))
+(define-fun .locked ((V0 epoch) (V1 node)) Bool (! (__locked V0 V1) :next locked))
+(define-fun .transfer_msg ((V0 epoch) (V1 node)) Bool (! (__transfer_msg V0 V1) :next transfer_msg))
 
-(declare-fun le (epoch epoch) Bool)
 (declare-fun first () node)
+(declare-fun le (epoch epoch) Bool)
 (declare-fun zero () epoch)
 
-(define-fun .le ((V0 epoch) (V1 epoch)) Bool (! (le V0 V1) :global true))
 (define-fun .first () node (! first :global true))
+(define-fun .le ((V0 epoch) (V1 epoch)) Bool (! (le V0 V1) :global true))
 (define-fun .zero () epoch (! zero :global true))
 
 (declare-fun __ts0_a () Bool)

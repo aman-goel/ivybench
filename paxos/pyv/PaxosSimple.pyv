@@ -1,0 +1,86 @@
+sort value
+sort acceptor
+sort quorum
+sort ballot
+
+immutable relation le(ballot, ballot) @no_minimize
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+immutable constant negone:ballot
+axiom le(negone, X)
+immutable constant max:ballot
+axiom le(X, max)
+
+immutable relation member(acceptor, quorum)
+axiom forall Q1:quorum, Q2:quorum. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+mutable relation msg_1a(ballot)
+mutable relation msg_1b(acceptor, ballot)
+mutable relation msg_2a(ballot, value)
+mutable relation msg_2b(acceptor, ballot, value)
+mutable function maxBal(acceptor):ballot
+
+# Definitions
+derived relation chosenAt(ballot, value): chosenAt(B, V) <-> exists Q. forall A. member(A, Q) -> msg_2b(A, B, V)
+derived relation chosen(value): chosen(V) <-> exists B. chosenAt(B, V)
+derived relation showsSafeAt(quorum, ballot, value): showsSafeAt(Q, B, V) <-> ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+													(exists C:ballot. !le(B, C) & 
+														(C != negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V)) & 
+														(forall D:ballot. (!le(D, C) & !le(B, D)) -> 
+															(forall A:acceptor. member(A, Q) -> (forall Vd:value. !msg_2b(A, D, Vd))))))
+derived relation isSafeAt(ballot, value): isSafeAt(B, V) <-> exists Q:quorum. showsSafeAt(Q, B, V)
+
+derived relation showsSafeAtPaxosSimple(quorum, ballot, value): showsSafeAtPaxosSimple(Q, B, V) <->
+		(	(forall A. member(A, Q) -> msg_1b(A, B)) & 
+		(	(forall A, MBAL, MVAL. !(member(A, Q) & msg_1b(A, B) & msg_2b(A, MBAL, MVAL))) |
+			(exists MBAL.	(exists A. member(A, Q) & msg_1b(A, B) & msg_2b(A, MBAL, V)) &
+							(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(A, B) & msg_2b(A, MBAL2, MVAL2) -> le(MBAL2, MBAL)))
+		))
+derived relation isSafeAtPaxosSimple(ballot, value): isSafeAtPaxosSimple(B, V) <-> exists Q:quorum. showsSafeAtPaxosSimple(Q, B, V)
+
+init (maxBal(A) = negone)
+init !msg_1a(B)
+init !msg_1b(A, B)
+init !msg_2a(B, V)
+init !msg_2b(A, B, V)
+
+transition phase_1a(b:ballot)
+   modifies msg_1a
+   & (b != negone)
+   & (msg_1a(B) <-> old(msg_1a(B)) | B=b)
+
+transition phase_1b(a:acceptor, b:ballot)
+   modifies msg_1b, maxBal
+   & (b != negone)
+   & old(msg_1a(b))
+   & old(!le(b, maxBal(a)))
+   & (A!=a -> maxBal(A) = old(maxBal(A)))
+   & (A=a -> maxBal(A) = b)
+   & (msg_1b(A, B) <-> old(msg_1b(A, B)) | A=a & B=b)
+
+transition phase_2a(b:ballot, v:value)
+   modifies msg_2a
+   & (b != negone)
+   & old(!(exists V. msg_2a(b, V)))
+   & old(isSafeAtPaxosSimple(b, v))
+   & (msg_2a(B, V) <-> old(msg_2a(B, V)) | B=b & V=v)
+
+transition phase_2b(a:acceptor, b:ballot, v:value)
+   modifies msg_2b, maxBal
+   & (b != negone)
+   & old(msg_2a(b, v))
+   & old(le(maxBal(a), b))
+   & (A!=a -> maxBal(A) = old(maxBal(A)))
+   & (A=a -> maxBal(A) = b)
+   & (msg_2b(A, B, V) <-> old(msg_2b(A, B, V)) | A=a & B=b & V=v)
+
+
+# Property
+safety forall V1, V2. chosen(V1) & chosen(V2) -> (V1 = V2)
+
+### Voting result -- 3A3Q2V4B -> 3A3Q2V4B
+safety [ic3po1]	(forall A1, V1, B1 . (msg_2b(A1, B1, V1) -> isSafeAt(B1, V1)))
+safety [ic3po2]	(forall V2, A1, B1, V1 . ((chosenAt(B1, V2) & msg_2b(A1, B1, V1)) -> (V1 = V2)))
+###

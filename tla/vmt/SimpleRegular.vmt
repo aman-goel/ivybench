@@ -1,38 +1,38 @@
 (declare-sort node 0)
-(declare-sort value 0)
 (declare-sort pcstate 0)
+(declare-sort value 0)
 
 (define-fun .node ((S node)) node (! S :sort 2))
-(define-fun .value ((S value)) value (! S :sort 2))
 (define-fun .pcstate ((S pcstate)) pcstate (! S :sort 4))
+(define-fun .value ((S value)) value (! S :sort 2))
 
-(declare-fun __y (node) value)
-(declare-fun __x (node value) Bool)
 (declare-fun __pc (node) pcstate)
+(declare-fun __x (node value) Bool)
+(declare-fun __y (node) value)
 
-(declare-fun y (node) value)
-(declare-fun x (node value) Bool)
 (declare-fun pc (node) pcstate)
+(declare-fun x (node value) Bool)
+(declare-fun y (node) value)
 
-(define-fun .y ((V0 node)) value (! (__y V0) :next y))
-(define-fun .x ((V0 node) (V1 value)) Bool (! (__x V0 V1) :next x))
 (define-fun .pc ((V0 node)) pcstate (! (__pc V0) :next pc))
+(define-fun .x ((V0 node) (V1 value)) Bool (! (__x V0 V1) :next x))
+(define-fun .y ((V0 node)) value (! (__y V0) :next y))
 
 (declare-fun a1 () pcstate)
-(declare-fun done () pcstate)
+(declare-fun a2 () pcstate)
 (declare-fun b () pcstate)
-(declare-fun zero () value)
+(declare-fun done () pcstate)
 (declare-fun one () value)
 (declare-fun ring.btw (node node node) Bool)
-(declare-fun a2 () pcstate)
+(declare-fun zero () value)
 
 (define-fun .a1 () pcstate (! a1 :global true))
-(define-fun .done () pcstate (! done :global true))
+(define-fun .a2 () pcstate (! a2 :global true))
 (define-fun .b () pcstate (! b :global true))
-(define-fun .zero () value (! zero :global true))
+(define-fun .done () pcstate (! done :global true))
 (define-fun .one () value (! one :global true))
 (define-fun .ring.btw ((V0 node) (V1 node) (V2 node)) Bool (! (ring.btw V0 V1 V2) :global true))
-(define-fun .a2 () pcstate (! a2 :global true))
+(define-fun .zero () value (! zero :global true))
 
 (define-fun .prop () Bool (! 
  (let (($v (=> (forall ((S node)) (= (__pc S) done)) (exists ((I node)) (= (__y I) one)))
@@ -64,15 +64,15 @@
  (and $v))
  :action ext:step_a2))
 
-(define-fun .action_ring.get_prev () Bool (! 
- (let (($v (exists ((V__fml:x node) (V__fml:y node)) (and (not (= V__fml:y V__fml:x)) (forall ((Z node)) (=> (and (not (= Z V__fml:y)) (not (= Z V__fml:x))) (ring.btw V__fml:y V__fml:x Z)))))
- ))
- (and $v))
- :action ring.get_prev))
-
 (define-fun .action_ext:step_b () Bool (! 
  (let (($v (exists ((V__fml:self node) (V__fml:v value) (V__fml:x node) (V__new_fml:y node) (V__new_loc:0 node)) (and (= V__new_fml:y V__fml:self) (= V__new_loc:0 V__fml:x) (forall ((V0 node)) (= (y V0) (ite (= V0 V__fml:self) V__fml:v (__y V0)))) (forall ((V0 node)) (= (pc V0) (ite (= V0 V__fml:self) done (__pc V0)))) (= (__pc V__fml:self) b) (not (= V__new_fml:y V__fml:x)) (forall ((Z node)) (=> (and (not (= Z V__new_fml:y)) (not (= Z V__fml:x))) (ring.btw V__new_fml:y V__fml:x Z))) (__x V__new_loc:0 V__fml:v)))
  ))
  (and $v))
  :action ext:step_b))
+
+(define-fun .action_ring.get_prev () Bool (! 
+ (let (($v (exists ((V__fml:x node) (V__fml:y node)) (and (not (= V__fml:y V__fml:x)) (forall ((Z node)) (=> (and (not (= Z V__fml:y)) (not (= Z V__fml:x))) (ring.btw V__fml:y V__fml:x Z)))))
+ ))
+ (and $v))
+ :action ring.get_prev))
 

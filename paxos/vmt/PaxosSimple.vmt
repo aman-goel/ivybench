@@ -1,0 +1,170 @@
+(declare-sort acceptor 0)
+(declare-sort ballot 0)
+(declare-sort quorum 0)
+(declare-sort value 0)
+
+(define-fun .acceptor ((S acceptor)) acceptor (! S :sort 3))
+(define-fun .ballot ((S ballot)) ballot (! S :sort 4))
+(define-fun .quorum ((S quorum)) quorum (! S :sort 3))
+(define-fun .value ((S value)) value (! S :sort 2))
+
+(declare-fun __chosen (value) Bool)
+(declare-fun __chosenAt (ballot value) Bool)
+(declare-fun __isSafeAt (ballot value) Bool)
+(declare-fun __isSafeAtPaxosSimple (ballot value) Bool)
+(declare-fun __maxBal (acceptor) ballot)
+(declare-fun __msg_1a (ballot) Bool)
+(declare-fun __msg_1b (acceptor ballot) Bool)
+(declare-fun __msg_2a (ballot value) Bool)
+(declare-fun __msg_2b (acceptor ballot value) Bool)
+(declare-fun __showsSafeAt (quorum ballot value) Bool)
+(declare-fun __showsSafeAtPaxosSimple (quorum ballot value) Bool)
+
+(declare-fun chosen (value) Bool)
+(declare-fun chosenAt (ballot value) Bool)
+(declare-fun isSafeAt (ballot value) Bool)
+(declare-fun isSafeAtPaxosSimple (ballot value) Bool)
+(declare-fun maxBal (acceptor) ballot)
+(declare-fun msg_1a (ballot) Bool)
+(declare-fun msg_1b (acceptor ballot) Bool)
+(declare-fun msg_2a (ballot value) Bool)
+(declare-fun msg_2b (acceptor ballot value) Bool)
+(declare-fun showsSafeAt (quorum ballot value) Bool)
+(declare-fun showsSafeAtPaxosSimple (quorum ballot value) Bool)
+
+(define-fun .chosen ((V0 value)) Bool (! (__chosen V0) :next chosen))
+(define-fun .chosenAt ((V0 ballot) (V1 value)) Bool (! (__chosenAt V0 V1) :next chosenAt))
+(define-fun .isSafeAt ((V0 ballot) (V1 value)) Bool (! (__isSafeAt V0 V1) :next isSafeAt))
+(define-fun .isSafeAtPaxosSimple ((V0 ballot) (V1 value)) Bool (! (__isSafeAtPaxosSimple V0 V1) :next isSafeAtPaxosSimple))
+(define-fun .maxBal ((V0 acceptor)) ballot (! (__maxBal V0) :next maxBal))
+(define-fun .msg_1a ((V0 ballot)) Bool (! (__msg_1a V0) :next msg_1a))
+(define-fun .msg_1b ((V0 acceptor) (V1 ballot)) Bool (! (__msg_1b V0 V1) :next msg_1b))
+(define-fun .msg_2a ((V0 ballot) (V1 value)) Bool (! (__msg_2a V0 V1) :next msg_2a))
+(define-fun .msg_2b ((V0 acceptor) (V1 ballot) (V2 value)) Bool (! (__msg_2b V0 V1 V2) :next msg_2b))
+(define-fun .showsSafeAt ((V0 quorum) (V1 ballot) (V2 value)) Bool (! (__showsSafeAt V0 V1 V2) :next showsSafeAt))
+(define-fun .showsSafeAtPaxosSimple ((V0 quorum) (V1 ballot) (V2 value)) Bool (! (__showsSafeAtPaxosSimple V0 V1 V2) :next showsSafeAtPaxosSimple))
+
+(declare-fun le (ballot ballot) Bool)
+(declare-fun max () ballot)
+(declare-fun member (acceptor quorum) Bool)
+(declare-fun negone () ballot)
+
+(define-fun .le ((V0 ballot) (V1 ballot)) Bool (! (le V0 V1) :global true))
+(define-fun .max () ballot (! max :global true))
+(define-fun .member ((V0 acceptor) (V1 quorum)) Bool (! (member V0 V1) :global true))
+(define-fun .negone () ballot (! negone :global true))
+
+(define-fun .def___chosen () Bool (! 
+ (let (($v (forall ((V0 value)) (= (__chosen V0) (exists ((B ballot)) (__chosenAt B V0))))
+ ))
+ (and $v))
+ :definition __chosen))
+
+(define-fun .def___chosenAt () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (__chosenAt V0 V1) (exists ((Q quorum)) (forall ((A acceptor)) (=> (member A Q) (__msg_2b A V0 V1))))))
+ ))
+ (and $v))
+ :definition __chosenAt))
+
+(define-fun .def___isSafeAt () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (__isSafeAt V0 V1) (exists ((Q quorum)) (__showsSafeAt Q V0 V1))))
+ ))
+ (and $v))
+ :definition __isSafeAt))
+
+(define-fun .def___isSafeAtPaxosSimple () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (__isSafeAtPaxosSimple V0 V1) (exists ((Q quorum)) (__showsSafeAtPaxosSimple Q V0 V1))))
+ ))
+ (and $v))
+ :definition __isSafeAtPaxosSimple))
+
+(define-fun .def___showsSafeAt () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 ballot) (V2 value)) (= (__showsSafeAt V0 V1 V2) (and (forall ((A acceptor)) (=> (member A V0) (le V1 (__maxBal A)))) (exists ((C ballot)) (and (not (le V1 C)) (=> (not (= C negone)) (exists ((A acceptor)) (and (member A V0) (__msg_2b A C V2)))) (forall ((D ballot)) (=> (and (not (le D C)) (not (le V1 D))) (forall ((A acceptor)) (=> (member A V0) (forall ((Vd value)) (not (__msg_2b A D Vd))))))))))))
+ ))
+ (and $v))
+ :definition __showsSafeAt))
+
+(define-fun .def___showsSafeAtPaxosSimple () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 ballot) (V2 value)) (= (__showsSafeAtPaxosSimple V0 V1 V2) (and (forall ((A acceptor)) (=> (member A V0) (__msg_1b A V1))) (or (forall ((A acceptor) (MBAL ballot) (MVAL value)) (not (and (member A V0) (__msg_1b A V1) (__msg_2b A MBAL MVAL)))) (exists ((MBAL ballot)) (and (exists ((A acceptor)) (and (member A V0) (__msg_1b A V1) (__msg_2b A MBAL V2))) (forall ((A acceptor) (MBAL2 ballot) (MVAL2 value)) (=> (and (member A V0) (__msg_1b A V1) (__msg_2b A MBAL2 MVAL2)) (le MBAL2 MBAL)))))))))
+ ))
+ (and $v))
+ :definition __showsSafeAtPaxosSimple))
+
+(define-fun .def_chosen () Bool (! 
+ (let (($v (forall ((V0 value)) (= (chosen V0) (exists ((B ballot)) (chosenAt B V0))))
+ ))
+ (and $v))
+ :definition chosen))
+
+(define-fun .def_chosenAt () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (chosenAt V0 V1) (exists ((Q quorum)) (forall ((A acceptor)) (=> (member A Q) (msg_2b A V0 V1))))))
+ ))
+ (and $v))
+ :definition chosenAt))
+
+(define-fun .def_isSafeAt () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (isSafeAt V0 V1) (exists ((Q quorum)) (showsSafeAt Q V0 V1))))
+ ))
+ (and $v))
+ :definition isSafeAt))
+
+(define-fun .def_isSafeAtPaxosSimple () Bool (! 
+ (let (($v (forall ((V0 ballot) (V1 value)) (= (isSafeAtPaxosSimple V0 V1) (exists ((Q quorum)) (showsSafeAtPaxosSimple Q V0 V1))))
+ ))
+ (and $v))
+ :definition isSafeAtPaxosSimple))
+
+(define-fun .def_showsSafeAt () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 ballot) (V2 value)) (= (showsSafeAt V0 V1 V2) (and (forall ((A acceptor)) (=> (member A V0) (le V1 (maxBal A)))) (exists ((C ballot)) (and (not (le V1 C)) (=> (not (= C negone)) (exists ((A acceptor)) (and (member A V0) (msg_2b A C V2)))) (forall ((D ballot)) (=> (and (not (le D C)) (not (le V1 D))) (forall ((A acceptor)) (=> (member A V0) (forall ((Vd value)) (not (msg_2b A D Vd))))))))))))
+ ))
+ (and $v))
+ :definition showsSafeAt))
+
+(define-fun .def_showsSafeAtPaxosSimple () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 ballot) (V2 value)) (= (showsSafeAtPaxosSimple V0 V1 V2) (and (forall ((A acceptor)) (=> (member A V0) (msg_1b A V1))) (or (forall ((A acceptor) (MBAL ballot) (MVAL value)) (not (and (member A V0) (msg_1b A V1) (msg_2b A MBAL MVAL)))) (exists ((MBAL ballot)) (and (exists ((A acceptor)) (and (member A V0) (msg_1b A V1) (msg_2b A MBAL V2))) (forall ((A acceptor) (MBAL2 ballot) (MVAL2 value)) (=> (and (member A V0) (msg_1b A V1) (msg_2b A MBAL2 MVAL2)) (le MBAL2 MBAL)))))))))
+ ))
+ (and $v))
+ :definition showsSafeAtPaxosSimple))
+
+(define-fun .prop () Bool (! 
+ (let (($v (and (forall ((V1 value) (V2 value)) (=> (and (__chosen V1) (__chosen V2)) (= V1 V2))) (forall ((A1 acceptor) (B1 ballot) (V1 value)) (=> (__msg_2b A1 B1 V1) (__isSafeAt B1 V1))) (forall ((A1 acceptor) (B1 ballot) (V1 value) (V2 value)) (=> (and (__chosenAt B1 V2) (__msg_2b A1 B1 V1)) (= V1 V2))))
+ ))
+ (and $v))
+ :invar-property 0))
+
+(define-fun .axiom () Bool (! 
+ (let (($v (and (forall ((X ballot)) (le X X)) (forall ((X ballot) (Y ballot) (Z ballot)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X ballot) (Y ballot)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X ballot) (Y ballot)) (or (le X Y) (le Y X))) (forall ((X ballot)) (le negone X)) (forall ((X ballot)) (le X max)) (forall ((Q1 quorum) (Q2 quorum)) (exists ((A acceptor)) (and (member A Q1) (member A Q2)))))
+ ))
+ (and $v))
+ :axiom true))
+
+(define-fun .init () Bool (! 
+ (let (($v (and (forall ((V0 acceptor)) (= (__maxBal V0) negone)) (forall ((V0 ballot)) (= (__msg_1a V0) false)) (forall ((V0 acceptor) (V1 ballot)) (= (__msg_1b V0 V1) false)) (forall ((V0 ballot) (V1 value)) (= (__msg_2a V0 V1) false)) (forall ((V0 acceptor) (V1 ballot) (V2 value)) (= (__msg_2b V0 V1 V2) false)))
+ ))
+ (and $v))
+ :init true))
+
+(define-fun .action_ext:phase_1a () Bool (! 
+ (let (($v (exists ((V__fml:b ballot)) (and (forall ((V0 ballot)) (= (msg_1a V0) (ite (= V0 V__fml:b) true (__msg_1a V0)))) (not (= V__fml:b negone))))
+ ))
+ (and $v))
+ :action ext:phase_1a))
+
+(define-fun .action_ext:phase_1b () Bool (! 
+ (let (($v (exists ((V__fml:a acceptor) (V__fml:b ballot)) (and (forall ((V0 acceptor)) (= (maxBal V0) (ite (= V0 V__fml:a) V__fml:b (__maxBal V0)))) (forall ((V0 acceptor) (V1 ballot)) (= (msg_1b V0 V1) (ite (and (= V0 V__fml:a) (= V1 V__fml:b)) true (__msg_1b V0 V1)))) (not (= V__fml:b negone)) (__msg_1a V__fml:b) (not (le V__fml:b (__maxBal V__fml:a)))))
+ ))
+ (and $v))
+ :action ext:phase_1b))
+
+(define-fun .action_ext:phase_2a () Bool (! 
+ (let (($v (exists ((V__fml:b ballot) (V__fml:v value)) (and (forall ((V0 ballot) (V1 value)) (= (msg_2a V0 V1) (ite (and (= V0 V__fml:b) (= V1 V__fml:v)) true (__msg_2a V0 V1)))) (not (= V__fml:b negone)) (forall ((V value)) (not (__msg_2a V__fml:b V))) (__isSafeAtPaxosSimple V__fml:b V__fml:v)))
+ ))
+ (and $v))
+ :action ext:phase_2a))
+
+(define-fun .action_ext:phase_2b () Bool (! 
+ (let (($v (exists ((V__fml:a acceptor) (V__fml:b ballot) (V__fml:v value)) (and (forall ((V0 acceptor)) (= (maxBal V0) (ite (= V0 V__fml:a) V__fml:b (__maxBal V0)))) (forall ((V0 acceptor) (V1 ballot) (V2 value)) (= (msg_2b V0 V1 V2) (ite (and (= V0 V__fml:a) (= V1 V__fml:b) (= V2 V__fml:v)) true (__msg_2b V0 V1 V2)))) (not (= V__fml:b negone)) (__msg_2a V__fml:b V__fml:v) (le (__maxBal V__fml:a) V__fml:b)))
+ ))
+ (and $v))
+ :action ext:phase_2b))
+

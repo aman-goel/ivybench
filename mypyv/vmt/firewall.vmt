@@ -2,14 +2,14 @@
 
 (define-fun .node ((S node)) node (! S :sort 2))
 
-(declare-fun __sent (node node) Bool)
 (declare-fun __allowed_in (node) Bool)
+(declare-fun __sent (node node) Bool)
 
-(declare-fun sent (node node) Bool)
 (declare-fun allowed_in (node) Bool)
+(declare-fun sent (node node) Bool)
 
-(define-fun .sent ((V0 node) (V1 node)) Bool (! (__sent V0 V1) :next sent))
 (define-fun .allowed_in ((V0 node)) Bool (! (__allowed_in V0) :next allowed_in))
+(define-fun .sent ((V0 node) (V1 node)) Bool (! (__sent V0 V1) :next sent))
 
 (declare-fun internal (node) Bool)
 
@@ -27,15 +27,15 @@
  (and $v))
  :init true))
 
-(define-fun .action_ext:send_to_internal () Bool (! 
- (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (sent V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__sent V0 V1)))) (not (internal V__fml:src)) (internal V__fml:dst) (__allowed_in V__fml:src)))
- ))
- (and $v))
- :action ext:send_to_internal))
-
 (define-fun .action_ext:send_from_internal () Bool (! 
  (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (sent V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__sent V0 V1)))) (forall ((V0 node)) (= (allowed_in V0) (ite (= V0 V__fml:dst) true (__allowed_in V0)))) (internal V__fml:src) (not (internal V__fml:dst))))
  ))
  (and $v))
  :action ext:send_from_internal))
+
+(define-fun .action_ext:send_to_internal () Bool (! 
+ (let (($v (exists ((V__fml:dst node) (V__fml:src node)) (and (forall ((V0 node) (V1 node)) (= (sent V0 V1) (ite (and (= V0 V__fml:src) (= V1 V__fml:dst)) true (__sent V0 V1)))) (not (internal V__fml:src)) (internal V__fml:dst) (__allowed_in V__fml:src)))
+ ))
+ (and $v))
+ :action ext:send_to_internal))
 

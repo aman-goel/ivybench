@@ -1,23 +1,53 @@
-(declare-sort quorum 0)
 (declare-sort node 0)
+(declare-sort quorum 0)
 (declare-sort value 0)
 
-(define-fun .quorum ((S quorum)) quorum (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .quorum ((S quorum)) quorum (! S :sort 1))
 (define-fun .value ((S value)) value (! S :sort 2))
 
+(declare-fun __chosenAt (quorum value) Bool)
 (declare-fun __decision (value) Bool)
+(declare-fun __didNotVote (node) Bool)
 (declare-fun __vote (node value) Bool)
 
+(declare-fun chosenAt (quorum value) Bool)
 (declare-fun decision (value) Bool)
+(declare-fun didNotVote (node) Bool)
 (declare-fun vote (node value) Bool)
 
+(define-fun .chosenAt ((V0 quorum) (V1 value)) Bool (! (__chosenAt V0 V1) :next chosenAt))
 (define-fun .decision ((V0 value)) Bool (! (__decision V0) :next decision))
+(define-fun .didNotVote ((V0 node)) Bool (! (__didNotVote V0) :next didNotVote))
 (define-fun .vote ((V0 node) (V1 value)) Bool (! (__vote V0 V1) :next vote))
 
 (declare-fun member (node quorum) Bool)
 
 (define-fun .member ((V0 node) (V1 quorum)) Bool (! (member V0 V1) :global true))
+
+(define-fun .def___chosenAt () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 value)) (= (__chosenAt V0 V1) (forall ((N node)) (=> (member N V0) (__vote N V1)))))
+ ))
+ (and $v))
+ :definition __chosenAt))
+
+(define-fun .def___didNotVote () Bool (! 
+ (let (($v (forall ((V0 node)) (= (__didNotVote V0) (forall ((V value)) (not (__vote V0 V)))))
+ ))
+ (and $v))
+ :definition __didNotVote))
+
+(define-fun .def_chosenAt () Bool (! 
+ (let (($v (forall ((V0 quorum) (V1 value)) (= (chosenAt V0 V1) (forall ((N node)) (=> (member N V0) (vote N V1)))))
+ ))
+ (and $v))
+ :definition chosenAt))
+
+(define-fun .def_didNotVote () Bool (! 
+ (let (($v (forall ((V0 node)) (= (didNotVote V0) (forall ((V value)) (not (vote V0 V)))))
+ ))
+ (and $v))
+ :definition didNotVote))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((V1 value) (V2 value)) (=> (and (__decision V1) (__decision V2)) (= V1 V2)))
@@ -38,13 +68,13 @@
  :init true))
 
 (define-fun .action_ext:cast_vote () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 value)) (= (vote V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:v)) true (__vote V0 V1)))) (forall ((V value)) (not (__vote V__fml:n V)))))
+ (let (($v (exists ((V__fml:n node) (V__fml:v value)) (and (forall ((V0 node) (V1 value)) (= (vote V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:v)) true (__vote V0 V1)))) (__didNotVote V__fml:n)))
  ))
  (and $v))
  :action ext:cast_vote))
 
 (define-fun .action_ext:decide () Bool (! 
- (let (($v (exists ((V__fml:q quorum) (V__fml:v value)) (and (forall ((V0 value)) (= (decision V0) (ite (= V0 V__fml:v) true (__decision V0)))) (forall ((N node)) (=> (member N V__fml:q) (__vote N V__fml:v)))))
+ (let (($v (exists ((V__fml:q quorum) (V__fml:v value)) (and (forall ((V0 value)) (= (decision V0) (ite (= V0 V__fml:v) true (__decision V0)))) (__chosenAt V__fml:q V__fml:v)))
  ))
  (and $v))
  :action ext:decide))

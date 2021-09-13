@@ -1,0 +1,185 @@
+#lang ivy1.7
+
+################################################################################
+#
+# Modules that should probably come from a standard library
+#
+################################################################################
+
+################################################################################
+#
+# Module for axiomatizing a total order
+#
+################################################################################
+
+module total_order(r) = {
+    axiom r(X,X)                        # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+
+################################################################################
+#
+# Types, relations and functions describing state of the network
+#
+################################################################################
+
+type round
+type value
+type quorum
+type node
+
+relation le(X:round, Y:round)
+instantiate total_order(le)
+
+individual negone:round
+axiom le(negone, X)
+individual max:round
+axiom le(X, max)
+
+relation member(N:node, Q:quorum)
+axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)
+
+relation one_a(R:round)
+relation one_b_max_vote(N:node, R1:round, R2:round, V:value)
+relation one_b(N:node, R:round) # := exists RMAX, V. one_b_max_vote(N,R,RMAX,V)
+relation left_rnd(N:node, R:round) # := exists R2, RMAX, V. ~le(R2,R) & one_b_max_vote(N,R,RMAX,V)
+relation proposal(R:round, V:value) # 2a
+relation vote(N:node, R:round, V:value) # 2b
+relation decision(N:node, R:round, V:value) # got 2b from a quorum
+
+# Definitions for ivy to vmt
+relation chosenAt(R:round, V:value) = exists Q. forall N. member(N, Q) -> vote(N, R, V)
+relation showsSafeAtPaxos(Qin:quorum, Rin:round, Vin:value) = 
+(
+	(forall N. member(N, Qin) -> one_b(N,Rin)) &
+	(	exists MAXRin. (MAXRin = negone & forall N:node,MAXR:round,V:value. ~(member(N, Qin) & ~le(Rin,MAXR) & vote(N,MAXR,V))) | 
+		(MAXRin ~= negone &
+			(exists N:node. member(N, Qin) & ~le(Rin,MAXRin) & vote(N,MAXRin,Vin)) &
+			(forall N:node,MAXR:round,V:value. (member(N, Qin) & ~le(Rin,MAXR) & vote(N,MAXR,V)) -> le(MAXR,MAXRin))
+		)
+	)
+)
+relation isSafeAtPaxos(R:round, V:value) = exists Q:quorum . showsSafeAtPaxos(Q, R, V)
+
+
+after init {
+	one_a(R) := false;
+	one_b_max_vote(N,R1,R2,V) := false;
+	one_b(N,R) := false;
+	left_rnd(N,R) := false;
+	proposal(R,V) := false;
+	vote(N,R,V) := false;
+	decision(N,R,V) := false;
+}
+
+action send_1a = {
+    # a proposer selects a round and sends a message asking nodes to join the round
+    local r:round {
+        assume r ~= negone;
+        one_a(r) := true
+    }
+}
+
+
+action join_round = {
+    # receive 1a and answer with 1b
+    local n:node, r:round {
+        assume r ~= negone;
+        assume one_a(r);
+        assume ~left_rnd(n,r);
+
+        local maxr:round, v:value {
+            # find the maximal vote in a round less than r
+            assume ((maxr = negone & forall MAXR:round,V:value. ~(~le(r,MAXR) & vote(n,MAXR,V))) |
+                    (maxr ~= negone & ~le(r,maxr) & vote(n,maxr,v) &
+                    (forall MAXR:round,V:value. (~le(r,MAXR) & vote(n,MAXR,V)) -> le(MAXR,maxr))
+                   ));
+            # send the 1b message
+            one_b_max_vote(n,r,maxr,v) := true;
+            one_b(n,r) := true;
+            left_rnd(n,R) := left_rnd(n,R) | ~le(r,R)
+        }
+    }
+}
+
+
+
+action propose = {
+    # receive a quorum of 1b's and send a 2a (proposal)
+    local r:round, v:value {
+        assume r ~= negone;
+        assume ~proposal(r,V);
+		assume isSafeAtPaxos(r, v);
+		
+		proposal(r, v) := true
+    }
+}
+
+action cast_vote = {
+    # receive a 2a and send 2b
+    local n:node, v:value, r:round {
+        assume r ~= negone;
+        assume ~left_rnd(n,r);
+        assume proposal(r, v);
+        vote(n, r, v) := true
+    }
+}
+
+action decide = {
+    # get 2b from a quorum
+    local n:node, r:round, v:value {
+        assume r ~= negone;
+        assume chosenAt(r, v);
+        decision(n, r, v) := true
+    }
+}
+
+export send_1a
+export join_round
+export propose
+export cast_vote
+export decide
+
+# safety property:
+conjecture (
+    decision(N1,R1,V1) &
+    decision(N2,R2,V2)
+) -> V1 = V2
+
+
+### swiss invariant (to confirm)
+#conjecture proposal(R,V1) & proposal(R,V2) -> V1 = V2 # 3
+#
+## only vote for proposed values
+#conjecture vote(N,R,V) -> proposal(R,V) # 3
+#
+## decisions come from quorums of votes:
+#conjecture forall R:round, V:value. (exists N:node. decision(N,R,V)) -> exists Q:quorum. forall N:node. member(N, Q) -> vote(N,R,V) # 4
+#
+#conjecture ~vote(N,negone,V) # 2
+#
+#conjecture one_b_max_vote(N,R,RMAX,V) -> one_b(N,R) # 4
+#conjecture one_b(N,R2) & ~le(R2,R1) -> left_rnd(N,R1) # 3
+#
+#conjecture one_b_max_vote(N,R2,negone,V1) & ~le(R2,R1) -> ~vote(N,R1,V2) # 5
+#conjecture one_b_max_vote(N,R,RMAX,V) & RMAX ~= negone -> ~le(R,RMAX) & vote(N,RMAX,V)
+#
+## turns out the RMAX ~= negone is superfluous
+##conjecture one_b_max_vote(N,R,RMAX,V) & RMAX ~= negone & ~le(R,ROTHER) & ~le(ROTHER,RMAX) -> ~vote(N,ROTHER,VOTHER)
+#conjecture one_b_max_vote(N,R,RMAX,V) & ~le(R,ROTHER) & ~le(ROTHER,RMAX) -> ~vote(N,ROTHER,VOTHER)
+#
+#conjecture forall R1:round, R2:round, V1:value, V2:value, Q:quorum. ~le(R2,R1) & proposal(R2,V2) & V1 ~= V2 ->
+#    exists N:node. member(N,Q) & left_rnd(N,R1) & ~vote(N,R1,V1)
+###
+
+
+### Proof certificate from IC3PO (3N3Q3V4B)
+#invariant [ic3po_other2]	(forall V1, R1 . (~proposal(R1, V1) | isSafeAtPaxos(R1, V1)))
+#invariant [ic3po_other5]	(forall V1, R1, N1 . (~vote(N1, R1, V1) | proposal(R1, V1)))
+#invariant [ic3po_other6]	(forall N1, R1, V1 . (~decision(N1, R1, V1) | chosenAt(R1, V1)))
+#invariant [ic3po_other8]	(forall N1, R1, R2 . (~one_b(N1, R2) | left_rnd(N1, R1) | le(R2, R1)))
+#invariant [ic3po_other10]	(forall R1, V1, V2 . ((V1 = V2) | ~proposal(R1, V1) | ~proposal(R1, V2)))
+###

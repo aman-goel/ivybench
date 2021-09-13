@@ -11,7 +11,7 @@ relation member(N: node, Q: nset)
 relation majority(N:nset)
 individual quorum : nset
 
-axiom majority(S) & majority(Y) -> exists N . member(N, S) & member(N, T)
+axiom majority(S1) & majority(S2) -> exists N . member(N, S1) & member(N, S2)
 
 after init {
 	voted(N, M) := false;

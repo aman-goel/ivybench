@@ -1,29 +1,44 @@
-(declare-sort response 0)
 (declare-sort node 0)
 (declare-sort request 0)
+(declare-sort response 0)
 
-(define-fun .response ((S response)) response (! S :sort 2))
 (define-fun .node ((S node)) node (! S :sort 2))
 (define-fun .request ((S request)) request (! S :sort 2))
+(define-fun .response ((S response)) response (! S :sort 2))
 
+(declare-fun __request_sent (node request) Bool)
+(declare-fun __responseMatched (node response) Bool)
 (declare-fun __response_received (node response) Bool)
 (declare-fun __response_sent (node response) Bool)
-(declare-fun __request_sent (node request) Bool)
 
+(declare-fun request_sent (node request) Bool)
+(declare-fun responseMatched (node response) Bool)
 (declare-fun response_received (node response) Bool)
 (declare-fun response_sent (node response) Bool)
-(declare-fun request_sent (node request) Bool)
 
+(define-fun .request_sent ((V0 node) (V1 request)) Bool (! (__request_sent V0 V1) :next request_sent))
+(define-fun .responseMatched ((V0 node) (V1 response)) Bool (! (__responseMatched V0 V1) :next responseMatched))
 (define-fun .response_received ((V0 node) (V1 response)) Bool (! (__response_received V0 V1) :next response_received))
 (define-fun .response_sent ((V0 node) (V1 response)) Bool (! (__response_sent V0 V1) :next response_sent))
-(define-fun .request_sent ((V0 node) (V1 request)) Bool (! (__request_sent V0 V1) :next request_sent))
 
 (declare-fun match (request response) Bool)
 
 (define-fun .match ((V0 request) (V1 response)) Bool (! (match V0 V1) :global true))
 
+(define-fun .def___responseMatched () Bool (! 
+ (let (($v (forall ((V0 node) (V1 response)) (= (__responseMatched V0 V1) (exists ((R request)) (and (__request_sent V0 R) (match R V1)))))
+ ))
+ (and $v))
+ :definition __responseMatched))
+
+(define-fun .def_responseMatched () Bool (! 
+ (let (($v (forall ((V0 node) (V1 response)) (= (responseMatched V0 V1) (exists ((R request)) (and (request_sent V0 R) (match R V1)))))
+ ))
+ (and $v))
+ :definition responseMatched))
+
 (define-fun .prop () Bool (! 
- (let (($v (forall ((N node) (P response)) (=> (__response_received N P) (exists ((R request)) (and (__request_sent N R) (match R P)))))
+ (let (($v (forall ((N node) (P response)) (=> (__response_received N P) (__responseMatched N P)))
  ))
  (and $v))
  :invar-property 0))
@@ -34,17 +49,17 @@
  (and $v))
  :init true))
 
-(define-fun .action_ext:receive_response () Bool (! 
- (let (($v (exists ((V__fml:n node) (V__fml:p response)) (and (forall ((V0 node) (V1 response)) (= (response_received V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:p)) true (__response_received V0 V1)))) (__response_sent V__fml:n V__fml:p)))
- ))
- (and $v))
- :action ext:receive_response))
-
 (define-fun .action_ext:new_request () Bool (! 
  (let (($v (exists ((V__fml:n node) (V__fml:r request)) (forall ((V0 node) (V1 request)) (= (request_sent V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:r)) true (__request_sent V0 V1)))))
  ))
  (and $v))
  :action ext:new_request))
+
+(define-fun .action_ext:receive_response () Bool (! 
+ (let (($v (exists ((V__fml:n node) (V__fml:p response)) (and (forall ((V0 node) (V1 response)) (= (response_received V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:p)) true (__response_received V0 V1)))) (__response_sent V__fml:n V__fml:p)))
+ ))
+ (and $v))
+ :action ext:receive_response))
 
 (define-fun .action_ext:respond () Bool (! 
  (let (($v (exists ((V__fml:n node) (V__fml:p response) (V__fml:r request)) (and (forall ((V0 node) (V1 response)) (= (response_sent V0 V1) (ite (and (= V0 V__fml:n) (= V1 V__fml:p)) true (__response_sent V0 V1)))) (__request_sent V__fml:n V__fml:r) (match V__fml:r V__fml:p)))

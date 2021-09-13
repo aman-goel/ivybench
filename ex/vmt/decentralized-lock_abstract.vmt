@@ -1,20 +1,20 @@
-(declare-sort time 0)
 (declare-sort node 0)
+(declare-sort time 0)
 
-(define-fun .time ((S time)) time (! S :sort 0))
 (define-fun .node ((S node)) node (! S :sort 2))
+(define-fun .time ((S time)) time (! S :sort 0))
 
 (declare-fun __gt (time node) Bool)
-(declare-fun __msg (node node time) Bool)
 (declare-fun __has_lock (node) Bool)
+(declare-fun __msg (node node time) Bool)
 
 (declare-fun gt (time node) Bool)
-(declare-fun msg (node node time) Bool)
 (declare-fun has_lock (node) Bool)
+(declare-fun msg (node node time) Bool)
 
 (define-fun .gt ((V0 time) (V1 node)) Bool (! (__gt V0 V1) :next gt))
-(define-fun .msg ((V0 node) (V1 node) (V2 time)) Bool (! (__msg V0 V1 V2) :next msg))
 (define-fun .has_lock ((V0 node)) Bool (! (__has_lock V0) :next has_lock))
+(define-fun .msg ((V0 node) (V1 node) (V2 time)) Bool (! (__msg V0 V1 V2) :next msg))
 
 (declare-fun first () node)
 (declare-fun le (time time) Bool)

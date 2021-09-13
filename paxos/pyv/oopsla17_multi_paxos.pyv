@@ -1,0 +1,154 @@
+sort votemap
+sort inst
+sort round
+sort value
+sort quorum
+sort node
+
+immutable relation le(round, round)
+
+axiom le(X,X)                        # Reflexivity
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)  # Transitivity
+axiom le(X, Y) & le(Y, X) -> X = Y    # Anti-symmetry
+axiom le(X, Y) | le(Y, X)             # Totality
+
+immutable constant negone:round
+axiom le(negone, X)
+immutable constant max:round
+axiom le(X, max)
+
+immutable relation member(node, quorum)
+axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)
+
+mutable relation one_a(round)
+mutable relation one_b_msg(node, round, votemap)
+mutable relation left_round(node, round)
+mutable relation joined_round(node, round)
+mutable relation proposal(inst, round, value) # 2a
+mutable relation active(round)  # round R has received a quorum of 1b and can now propose new values
+mutable relation vote(node, inst, round, value) # 2b
+mutable relation decision(node, inst, round, value) # got 2b from a quorum
+mutable function maxr(votemap,inst) : round
+mutable function maxv(votemap,inst) : value
+
+init !one_a(R)
+init !one_b_msg(N,R1,M)
+init !left_round(N,R)
+init !joined_round(N,R)
+init !proposal(I,R,V)
+init !vote(N,I,R,V)
+init !decision(N,I,R,V)
+init !active(R)
+
+
+transition send_1a(r:round)
+  modifies one_a
+    & r != negone
+    & (forall R . one_a(R) <-> old(one_a(R)) | R=r)
+
+
+transition join_round(n:node, r:round, m:votemap)
+  modifies one_b_msg, left_round, joined_round
+  & old (
+    & r != negone
+    & one_a(r)
+    & !left_round(n,r)
+    & (forall I:inst. (
+      ( maxr(m,I) = negone & forall R,V. !(vote(n,I,R,V) & !le(r,R)) ) |
+      ( vote(n,I,maxr(m,I),maxv(m,I)) & !le(r,maxr(m,I)) &
+        forall R,V. vote(n,I,R,V) & !le(r,R) -> le(R,maxr(m,I)) )
+    ))
+  )
+
+  & (forall A,B,C . one_b_msg(A,B,C) <->
+      ((A=n & B=r & C=m) | old(one_b_msg(A,B,C))))
+  & (forall A,R . left_round(A,R) <->
+      (if A=n then old(left_round(n,R)) | !le(r,R) else old(left_round(A,R))))
+  & (forall A,B . joined_round(A,B) <->
+      ((A=n & B=r) | old(joined_round(A,B))))
+
+transition receive_join_acks(r:round, q:quorum, m:votemap)
+  modifies active, proposal
+  & old(
+    & r != negone
+    & !active(r)
+    & (forall N:node. member(N, q) -> joined_round(N,r))
+    & (forall I:inst. (
+        ( maxr(m,I) = negone &
+          forall N,R,V. !(member(N, q) & !le(r,R) & vote(N,I,R,V)) ) |
+        ( (exists N,R,V.  member(N, q) & !le(r,R) & vote(N,I,R,V) & R = maxr(m,I) & V = maxv(m,I)) &
+          (forall N,R,V.  member(N, q) & !le(r,R) & vote(N,I,R,V) -> le(R,maxr(m,I))) )
+    ))
+  )
+  & (forall A . active(A) <->
+      (A=r | old(active(A))))
+  & (forall I, B, V . proposal(I, B, V) <->
+      (if B = r then old(proposal(I, r, V) | (maxr(m,I) != negone & V = maxv(m,I)))
+          else old(proposal(I, B, V))))
+
+
+transition propose(r:round, i:inst, v:value)
+  modifies proposal
+  & old(
+    & r != negone
+    & active(r)
+    & (forall V . !proposal(i, r, V))
+  )
+  & (forall A,B,C . proposal(A,B,C) <->
+      ((A=i & B=r & C=v) | old(proposal(A,B,C))))
+
+transition cast_vote(n:node, v:value, r:round, i:inst)
+  modifies vote
+  & old(
+    & r != negone
+    & !left_round(n,r)
+    & proposal(i, r, v)
+  )
+  & (forall A,B,C,D . vote(A,B,C,D) <->
+      ((A=n & B=i & C=r & D=v) | old(vote(A,B,C,D))))
+
+transition decide(n:node, r:round, v:value, q:quorum, i:inst)
+  modifies decision
+  & old(
+    & r != negone
+    & (forall N . member(N, q) -> vote(N, i, r, v))
+  )
+  & (forall A,B,C,D . decision(A,B,C,D) <->
+      ((A=n & B=i & C=r & D=v) | old(decision(A,B,C,D))))
+
+# safety property:
+safety (
+    decision(N1,I,R1,V1) &
+    decision(N2,I,R2,V2)
+) -> V1 = V2
+
+invariant proposal(I,R,V) -> active(R)
+
+## proposals are unique per round
+#invariant proposal(I,R,V1) & proposal(I,R,V2) -> V1 = V2
+#
+## only vote for proposed values
+#invariant vote(N,I,R,V) -> proposal(I,R,V)
+#
+## decisions come from quorums of votes:
+#invariant forall R:round, V:value. (exists N:node. decision(N,I,R,V)) -> exists Q:quorum. forall N:node. member(N, Q) -> vote(N,I,R,V)
+#
+## properties of negone
+#invariant !vote(N,I,negone,V)
+#
+## properties of joined_round, left_round
+#invariant joined_round(N,R2) & !le(R2,R1) -> left_round(N,R1)
+#invariant one_b_msg(N,R,M) -> joined_round(N,R)
+#
+## properties of one_b_msg
+#invariant one_b_msg(N,R2,M) & maxr(M,I) = negone & !le(R2,R1) -> !vote(N,I,R1,V2)
+#invariant one_b_msg(N,R, M) & maxr(M,I) != negone -> !le(R,maxr(M,I)) & vote(N,I,maxr(M,I),maxv(M,I))
+#invariant one_b_msg(N,R, M) & !le(R,ROTHER) & !le(ROTHER,maxr(M,I)) -> !vote(N,I,ROTHER,VOTHER)
+#
+## property of choosable and active: if R2>R1 is active and V is not proposed at I, then it's not choosable at R1
+#invariant forall I:inst, R1:round, R2:round, V:value, Q:quorum. (
+#   !le(R2,R1) & active(R2) & !proposal(I,R2,V) -> (
+#        exists N:node. member(N,Q) & left_round(N,R1) & !vote(N,I,R1,V)
+#    )
+#)
+
