@@ -1,6 +1,6 @@
-sort acceptor
-sort quorum
 sort proposer
+sort quorum
+sort acceptor
 
 immutable relation member(acceptor, quorum)
 axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)

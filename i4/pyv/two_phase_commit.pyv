@@ -7,7 +7,7 @@ mutable relation go_commit(node)
 mutable relation go_abort(node)
 mutable relation decide_commit(node)
 mutable relation decide_abort(node)
-mutable relation abort_flag
+mutable relation abort_flag()
 
 init !vote_yes(N)
 init !vote_no(N)
@@ -16,7 +16,7 @@ init !go_commit(N)
 init !go_abort(N)
 init !decide_commit(N)
 init !decide_abort(N)
-init !abort_flag
+init !(abort_flag)
 
 transition vote1(n: node)
   modifies vote_yes
@@ -33,28 +33,28 @@ transition vote2(n: node)
   & (!old(decide_commit(n)))
   & (!old(decide_abort(n)))
   & (vote_no(N) <-> old(vote_no(N)) | (N = n))
-  & (abort_flag <-> true)
+  & (abort_flag)
   & (decide_abort(N) <-> old(decide_abort(N)) | (N = n))
 
 transition fail(n: node)
   modifies alive, abort_flag
   & (old(alive(n)))
   & (alive(N) <-> old(alive(N)) & (N != n))
-  & (abort_flag <-> true)
+  & (abort_flag)
 
 transition go1()
   modifies go_commit
   & (!old(go_commit(N)))
   & (!old(go_abort(N)))
   & (old(vote_yes(N)))
-  & (go_commit(N) <-> true)
+  & (go_commit(N))
 
 transition go2()
   modifies go_abort
   & (!old(go_commit(N)))
   & (!old(go_abort(N)))
   & (exists N. old(vote_no(N)) | !old(alive(N)))
-  & (go_abort(N) <-> true)
+  & (go_abort(N))
 
 transition commit(n: node)
   modifies decide_commit
@@ -68,4 +68,7 @@ transition abort(n: node)
   & (old(go_abort(n)))
   & (decide_abort(N) <-> old(decide_abort(N)) | (N = n))
 
-safety [prop] (decide_commit(N) -> !decide_abort(N2)) & (decide_commit(N) -> vote_yes(N2)) & (decide_abort(N) -> abort_flag)
+#safety [prop] (decide_commit(N) -> !decide_abort(N2)) & (decide_commit(N) -> vote_yes(N2)) & (decide_abort(N) -> abort_flag)
+safety [prop1] (decide_commit(N) -> !decide_abort(N2))
+safety [prop2] (decide_commit(N) -> vote_yes(N2))
+safety [prop3] (decide_abort(N) -> abort_flag)

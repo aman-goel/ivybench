@@ -1,5 +1,5 @@
-sort node
 sort nodeset
+sort node
 
 immutable relation member(node, nodeset)
 immutable relation majority(nodeset)

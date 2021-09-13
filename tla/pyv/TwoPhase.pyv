@@ -5,14 +5,14 @@ mutable relation prepared(resource_manager)
 mutable relation committed(resource_manager)
 mutable relation aborted(resource_manager)
 
-mutable relation tm_init
-mutable relation tm_committed
-mutable relation tm_aborted
+mutable relation tm_init()
+mutable relation tm_committed()
+mutable relation tm_aborted()
 mutable relation tm_prepared(resource_manager)
 
 mutable relation msg_prepared(resource_manager)
-mutable relation msg_commit
-mutable relation msg_abort
+mutable relation msg_commit()
+mutable relation msg_abort()
 
 init working(R)
 init !prepared(R)
@@ -20,13 +20,13 @@ init !committed(R)
 init !aborted(R)
 
 init tm_init
-init !tm_committed
-init !tm_aborted
+init !(tm_committed)
+init !(tm_aborted)
 init !tm_prepared(R)
 
 init !msg_prepared(R)
-init !msg_commit
-init !msg_abort
+init !(msg_commit)
+init !(msg_abort)
 
 transition tMRcvPrepared(rm:resource_manager)
   modifies tm_prepared
@@ -38,18 +38,18 @@ transition tMCommit()
   modifies tm_init, tm_committed, tm_aborted, msg_commit
   & (old(tm_init))
   & (forall R. old(tm_prepared(R)))
-  & (tm_init <-> false)
-  & (tm_committed <-> true)
-  & (tm_aborted <-> false)
-  & (msg_commit <-> true)
+  & !(tm_init)
+  & (tm_committed)
+  & !(tm_aborted)
+  & (msg_commit)
 
 transition tMAbort()
   modifies tm_init, tm_committed, tm_aborted, msg_abort
   & (old(tm_init))
-  & (tm_init <-> false)
-  & (tm_committed <-> false)
-  & (tm_aborted <-> true)
-  & (msg_abort <-> true)
+  & !(tm_init)
+  & !(tm_committed)
+  & (tm_aborted)
+  & (msg_abort)
 
 transition rMPrepare(rm:resource_manager)
   modifies working, prepared, committed, aborted, msg_prepared

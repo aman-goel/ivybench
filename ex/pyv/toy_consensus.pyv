@@ -1,6 +1,6 @@
-sort node
 sort value
 sort quorum
+sort node
 
 immutable relation member(node, quorum)
 axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)

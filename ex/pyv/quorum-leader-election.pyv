@@ -1,5 +1,5 @@
-sort node
 sort nset
+sort node
 
 mutable relation isleader(node)
 mutable relation voted(node, node)

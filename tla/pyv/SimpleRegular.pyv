@@ -1,6 +1,6 @@
-sort node
 sort value
 sort pcstate
+sort node
 
 immutable relation btw(node, node, node)
 

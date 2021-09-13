@@ -1,0 +1,35 @@
+sort value
+sort quorum
+sort node
+
+immutable relation member(node, quorum)
+mutable relation vote(node, value)
+mutable relation decide(quorum, value)
+mutable relation decision(value)
+
+axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)
+
+init !vote(N, V)
+init !decide(Q,V)
+init !decision(V)
+
+transition cast_vote(n: node, v: value)
+   modifies vote
+   & (forall V. !old(vote(n,V)))
+   & (vote(N, V) <-> old(vote(N, V)) | N = n & V = v)
+
+transition collect_votes(q: quorum, v: value)
+  modifies decide
+  & old(member(N,q) -> vote(N,v))
+  & (decide(Q, V) <-> (old(decide(Q, V)) | Q=q & V=v))
+
+transition learn_value(q: quorum, v: value)
+  modifies decision
+  & old(decide(q,v))
+  & (decision(V) <-> (old(decision(V)) | V=v))
+
+safety decision(V1) & decision(V2) -> V1 = V2
+
+invariant [ic3po_global3]	(forall N0, V0, V1 . ((vote(N0, V1) & vote(N0, V0)) -> (V0 = V1)))
+invariant [ic3po_global2]	(forall Q0, N0, V0 . ((member(N0, Q0) & decide(Q0, V0)) -> vote(N0, V0)))
+invariant [ic3po_global3_1]	(forall V0 . (decision(V0) -> (exists Q0 . decide(Q0, V0))))

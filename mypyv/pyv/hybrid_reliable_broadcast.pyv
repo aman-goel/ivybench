@@ -34,9 +34,9 @@
 #
 ################################################################################
 
-sort node     # n > tc + 3ta + 2ts + 2ti
 sort quorum_a # >= ta + ts + 1
 sort quorum_b # >= n - tc - ta - ts - ti
+sort node     # n > tc + 3ta + 2ts + 2ti
 
 immutable relation member_a(node, quorum_a)
 immutable relation member_b(node, quorum_b)
