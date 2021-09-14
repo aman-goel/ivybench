@@ -28,13 +28,13 @@ action send_request_vote(src: node, dst: node) = {
 	vote_request_msg(src, dst) := true;
 }
 
-action send_vote(src: node, dst: node, nondet:bool) = {
+action send_vote(src: node, dst: node) = {
   require ~voted(src);
   require vote_request_msg(dst, src);
   
   vote_msg(src, dst) := true;
   voted(src) := true;
-  vote_request_msg(src, dst) := nondet;
+  vote_request_msg(src, dst) := *;
 }
 
 action recv_vote(n: node, sender: node) = {
