@@ -1,0 +1,77 @@
+#lang ivy1.7
+
+module ring_topology(carrier) = {
+
+    relation btw(X:carrier,Y:carrier, Z:carrier) # Y is on the acyclic path from X to Z
+
+    # Axiom defining the btw relation - note it's not reflexive
+    # not needed: axiom btw(X,Y,Z) -> X ~= Y & X ~= Z & Y ~= Z  # anti-reflexive
+    axiom btw(W,X,Y) & btw(W,Y,Z) -> btw(W,X,Z)  # transitive
+    axiom btw(W,X,Y) -> ~btw(W,Y,X)  # acyclic
+    axiom btw(W,X,Y) | btw(W,Y,X) | W=X | W=Y | X=Y  # total
+    axiom btw(X,Y,Z) -> btw(Y,Z,X)  # cyclic permutations
+
+#    action get_next(x:carrier) returns (y:carrier) = {
+#        assume x ~= y & ((Z ~= x & Z ~= y) -> btw(x,y,Z))
+#    }
+#
+#    action get_prev(y:carrier) returns (x:carrier) = {
+#        assume y ~= x & ((Z ~= y & Z ~= x) -> btw(y,x,Z))
+#    }
+
+}
+
+type node
+type value
+type pcstate
+
+instantiate ring : ring_topology(node)
+
+function x(N:node) : value
+function y(N:node) : value
+
+individual zero: value
+individual one: value
+axiom zero ~= one
+
+function pc(N:node) : pcstate
+individual a: pcstate
+individual b: pcstate
+individual done: pcstate
+axiom (a ~= b) & (a ~= done) & (b ~= done)
+#axiom forall P:pcstate. (P = a) | (P = b) | (P = done)
+
+after init {
+	x(N) := zero;
+	y(N) := zero;
+	pc(N) := a;
+}
+
+action step_a(self:node) = {
+	require (pc(self) = a);
+	x(self) := one;
+	pc(self) := b;
+}
+
+action step_b(self:node, prev:node) = {
+	require (pc(self) = b);
+	require (self ~= prev & ((Z ~= self & Z ~= prev) -> ring.btw(self,prev,Z)));
+	y(self) := x(prev);
+	pc(self) := done;
+}
+
+export step_a
+export step_b
+
+invariant [1000000] (forall S:node. pc(S) = done) -> (exists I:node. y(I) = one)
+
+### Proof certificate (required): #3
+#invariant [3_ic3po_required]	(forall N0 . ((pc(N0) = b) -> (one = x(N0))))
+#invariant [4_ic3po_required]	(forall N0 . ((done = pc(N0)) -> (one = x(N0))))
+###
+
+### Optional invariants: #3
+#invariant [1_ic3po_optional]	(forall N0 . ((pc(N0) = a) -> (x(N0) = zero)))
+#invariant [2_ic3po_optional]	(forall N0 . ((zero = x(N0)) -> (pc(N0) = a)))
+#invariant [5_ic3po_optional]	(forall N0 . ((pc(N0) = b) -> ~(x(N0) = zero)))
+###

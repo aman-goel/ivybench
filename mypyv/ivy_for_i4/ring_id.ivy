@@ -1,0 +1,58 @@
+#lang ivy1.7
+
+type node
+type id
+
+relation le(I0:id, I1:id)
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+
+relation btw(N0:node, N1:node, N2:node)
+axiom btw(W, X, Y) & btw(W, Y, Z) -> btw(W, X, Z)
+axiom btw(W, X, Y) -> ~btw(W, Y, X)
+axiom btw(W, X, Y) | btw(W, Y, X) | W = X | W = Y | X = Y
+axiom btw(X, Y, Z) -> btw(Y, Z, X)
+
+function idn(N:node):id
+axiom idn(X) = idn(Y) -> X = Y  # the idn function is injective
+
+relation leader(N:node)
+relation pending(I:id, N:node)
+
+after init  {
+	leader(N) := false;
+	pending(V, N) := false;
+}
+
+action send(n: node, next: node) = {
+  require (forall Z. (Z ~= n & Z ~= next) -> btw(n, next, Z));
+  
+  pending(idn(n), next) := true;
+}
+
+action recv(v:id, n:node, next:node, nondet:bool) = {
+  require (forall Z. (Z ~= n & Z ~= next) -> btw(n, next, Z));
+  require pending(v, n);
+  
+  pending(v, n) := nondet;	# message may or may not be removed, nothing is sent
+  if v = idn(n) {
+    leader(n) := true;
+  }
+  else {
+    if le(idn(n), v) {
+      pending(v, next) := true;	# forward v to next
+    }
+  }
+}
+
+export send
+export recv
+
+invariant [leader_unique] leader(X) & leader(Y) -> X = Y
+
+#invariant [help_leader_max] leader(L) -> le(idn(N), idn(L))
+#invariant [help_self_pending_max] pending(idn(L), L) -> le(idn(N), idn(L))
+#invariant [help_no_bypass] pending(idn(S), D) & btw(S, N, D) -> le(idn(N), idn(S))
+

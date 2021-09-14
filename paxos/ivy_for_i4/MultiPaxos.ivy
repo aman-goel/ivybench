@@ -1,0 +1,168 @@
+#lang ivy1.7
+
+type value
+type acceptor
+type quorum
+type ballot
+type instances
+
+# A total order helper module
+module total_order(r) = {
+    axiom r(X, X)                       # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+relation le(X:ballot, Y:ballot)
+instantiate total_order(le)
+individual negone:ballot
+axiom le(negone, X)
+individual max:ballot
+axiom le(X, max)
+
+individual none:value
+
+relation member(A:acceptor, Q:quorum)
+axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+relation msg_1a(B:ballot)
+relation msg_1b(I:instances, A:acceptor, B:ballot, MBAL:ballot, MVAL:value)
+relation msg_2a(I:instances, B:ballot, V:value)
+relation msg_2b(I:instances, A:acceptor, B:ballot, V:value)
+relation propCmds(V:value)
+
+function maxBal(A:acceptor):ballot
+function maxVBal(I:instances, A:acceptor):ballot
+function maxVal(I:instances, A:acceptor):value
+
+# Definitions
+#relation chosenAt(I:instances, B:ballot, V:value) = exists Q. forall A. member(A, Q) -> msg_2b(I, A, B, V)
+#relation chosen(I:instances, V:value) = exists B. chosenAt(I, B, V)
+#relation showsSafeAt(I:instances, Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+#													(exists C:ballot. ~le(B, C) & 
+#														(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(I, A, C, V)) & 
+#														(forall D:ballot. (~le(D, C) & ~le(B, D)) -> 
+#															(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(I, A, D, Vd))))))
+#relation isSafeAt(I:instances, B:ballot, V:value) = exists Q:quorum. showsSafeAt(I, Q, B, V)
+#
+#relation showsSafeAtPaxosSimple(I:instances, Q:quorum, B:ballot, V:value) =
+#		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(I, A, B, MBAL, MVAL)) & 
+#		(	(	(forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(I, A, B, MBAL, MVAL) & msg_2b(I, A, MBAL, MVAL))) & propCmds(V)) |
+#				(exists MBAL.	(exists A. member(A, Q) & msg_1b(I, A, B, MBAL, V) & msg_2b(I, A, MBAL, V)) &
+#								(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(I, A, B, MBAL2, MVAL2) & msg_2b(I, A, MBAL2, MVAL2) -> le(MBAL2, MBAL)))
+#		))
+#relation isSafeAtPaxosSimple(I:instances, B:ballot, V:value) = exists Q:quorum. showsSafeAtPaxosSimple(I, Q, B, V)
+#
+#relation showsSafeAtMultiPaxos(I:instances, Q:quorum, B:ballot, V:value) =
+#		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(I, A, B, MBAL, MVAL)) & 
+#			(	((forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(I, A, B, MBAL, MVAL) & MBAL ~= negone) ) & propCmds(V)) |
+#				(exists MBAL.	(exists A. member(A, Q) & msg_1b(I, A, B, MBAL, V) & (MBAL ~= negone)) &
+#								(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(I, A, B, MBAL2, MVAL2) & (MBAL2 ~= negone) -> le(MBAL2, MBAL)))
+#		))
+#relation isSafeAtMultiPaxos(I:instances, B:ballot, V:value) = exists Q:quorum. showsSafeAtMultiPaxos(I, Q, B, V)
+
+after init {
+    maxBal(A) := negone;
+    maxVBal(I, A) := negone;
+    maxVal(I, A) := none;
+    msg_1a(B) := false;
+    msg_1b(I, A, B, MBAL, MVAL) := false;
+    msg_2a(I, B, V) := false;
+    msg_2b(I, A, B, V) := false;
+    propCmds(V) := false;
+}
+
+action propose(c:value) = {
+    require c ~= none;
+    
+	propCmds(c) := true;
+}
+
+action phase_1a(b:ballot) = {
+    require b ~= negone;
+    
+    msg_1a(b) := true;
+}
+
+action phase_1b(a:acceptor, b:ballot) = {
+    require b ~= negone;
+    require msg_1a(b);
+    require ~le(b, maxBal(a));
+    
+    maxBal(a) := b;
+    msg_1b(I, a, b, maxVBal(I, a), maxVal(I, a)) := true;
+}
+
+action phase_2a(i:instances, b:ballot, v:value) = {
+    require b ~= negone;
+    require v ~= none;
+    require ~(exists V. msg_2a(i, b, V));
+	require exists Q:quorum.
+		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(i, A, b, MBAL, MVAL)) & 
+			(	((forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(i, A, b, MBAL, MVAL) & MBAL ~= negone) ) & propCmds(v)) |
+				(exists MBAL.	(exists A. member(A, Q) & msg_1b(i, A, b, MBAL, v) & (MBAL ~= negone)) &
+								(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(i, A, b, MBAL2, MVAL2) & (MBAL2 ~= negone) -> le(MBAL2, MBAL)))
+		));
+	
+    msg_2a(i, b, v) := true;
+}
+
+action phase_2b(i:instances, a:acceptor, b:ballot, v:value) = {
+    require b ~= negone;
+    require v ~= none;
+    require msg_2a(i, b, v);
+    require (maxBal(a) = b);
+
+    maxVBal(i, a) := b;
+    maxVal(i, a) := v;
+    msg_2b(i, a, b, v) := true;
+}
+
+export propose
+export phase_1a
+export phase_1b
+export phase_2a
+export phase_2b
+
+# the safety property
+invariant [safety] forall V1, V2. 	(exists B. exists Q. forall A. member(A, Q) -> msg_2b(I, A, B, V1)) & 
+									(exists B. exists Q. forall A. member(A, Q) -> msg_2b(I, A, B, V2)) -> (V1 = V2)
+
+
+### Voting result -- 3A3Q2V4B -> 3A3Q2V4B
+invariant [ic3po1]	(forall A1, V1, B1 . (msg_2b(I, A1, B1, V1) -> 
+						(exists Q.
+							((forall A:acceptor. member(A, Q) -> le(B1, maxBal(A))) & 
+							(exists C:ballot. ~le(B1, C) & 
+								(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(I, A, C, V1)) & 
+								(forall D:ballot. (~le(D, C) & ~le(B1, D)) -> 
+										(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(I, A, D, Vd))))))
+						)))
+invariant [ic3po2]	(forall V2, A1, B1, V1 . (((exists Q. forall A. member(A, Q) -> msg_2b(I, A, B1, V2)) & msg_2b(I, A1, B1, V1)) -> (V1 = V2)))
+###
+
+### PaxosSimple result -- 3A3Q2V4B -> 3A3Q3V4B
+invariant [ic3po3]	(forall B1, A1, MBAL, MVAL . (msg_1b(I, A1, B1, MBAL, MVAL) -> le(B1, maxBal(A1))))
+invariant [ic3po4]	(forall B1, V1 . (msg_2a(I, B1, V1) -> 
+						(exists Q.
+							((forall A:acceptor. member(A, Q) -> le(B1, maxBal(A))) & 
+							(exists C:ballot. ~le(B1, C) & 
+								(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(I, A, C, V1)) & 
+								(forall D:ballot. (~le(D, C) & ~le(B1, D)) -> 
+										(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(I, A, D, Vd))))))
+						)))
+invariant [ic3po5]	(forall B1, V1, V2 . ((msg_2a(I, B1, V1) & msg_2a(I, B1, V2)) -> (V1 = V2)))
+invariant [ic3po6]	(forall A1, B1, V1 . (msg_2b(I, A1, B1, V1) -> msg_2a(I, B1, V1)))
+###
+
+### PaxosImplicit result -- 3A3Q2V4B -> 3A3Q2V5B
+invariant [ic3po7]	(forall B2, A1, V1, B1 . (msg_1b(I, A1, B2, B1, V1) -> (le(B1, negone) | msg_2b(I, A1, B1, V1) | le(B2, negone))))
+invariant [ic3po8]	(forall B2, B3, B1, V2, V1, A1 . ((msg_1b(I, A1, B1, B2, V2) & msg_2b(I, A1, B3, V1)) -> (le(B3, B2) | le(B1, B3))))
+###
+
+### Paxos result -- 3A3Q2V4B -> 3A3Q2V2B
+invariant [ic3po9]	(forall I, A1 . le(maxVBal(I, A1), maxBal(A1)))
+invariant [ic3po10]	(forall I, A1, V1, B1 . (msg_2b(I, A1, B1, V1) -> le(B1, maxVBal(I, A1))))
+invariant [ic3po11]	(forall I, A1 . (msg_2b(I, A1, maxVBal(I, A1), maxVal(I, A1)) | le(maxVBal(I, A1), negone)))
+###

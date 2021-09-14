@@ -1,0 +1,40 @@
+#lang ivy1.7
+
+type node
+type quorum
+type value
+
+relation member(N:node, Q:quorum)
+relation vote(N:node, V:value)
+relation decide(Q:quorum, V:value)
+relation decision(V:value)
+
+axiom forall Q1, Q2. exists N. member(N, Q1) & member(N, Q2)
+
+after init  {
+    vote(N,V) := false;
+    decide(Q,V) := false;
+    decision(V) := false;
+}
+
+action cast_vote(n:node, v:value) = {
+    require forall V. ~vote(n,V);
+    vote(n, v) := true;
+}
+
+action collect_votes(q:quorum, v:value) = {
+    require forall N. member(N, q) -> vote(N, v);
+    decide(q,v) := true;
+}
+
+action learn_value(q:quorum, v:value) = {
+    require decide(q,v);
+    decision(v) := true;
+}
+
+export cast_vote
+export collect_votes
+export learn_value
+
+# safety property:
+invariant [1000000] decision(V1) & decision(V2) -> V1 = V2

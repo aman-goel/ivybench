@@ -1,0 +1,18 @@
+#lang ivy1.7
+
+type value
+
+relation chosen(V:value)
+
+after init {
+	chosen(V) := false;
+}
+
+action choose(v:value) = {
+	require forall V. ~chosen(V);
+	chosen(v) := true;
+}
+
+export choose
+
+invariant [1000000] (forall V1, V2. (chosen(V1) & chosen(V2)) -> (V1 = V2) )

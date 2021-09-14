@@ -1,0 +1,41 @@
+#lang ivy1.7
+
+type node
+
+relation internal(N:node)
+
+relation sent(N0:node, N1:node)
+relation allowed_in(N:node)
+
+after init  {
+	sent(S,D) := false;
+	allowed_in(N) := false;
+}
+
+action send_from_internal(src: node, dst: node) = {
+  require internal(src);
+  require ~internal(dst);
+  
+  sent(src,dst) := true;
+  allowed_in(dst) := true;
+}
+
+action send_to_internal(src: node, dst: node) = {
+  require ~internal(src);
+  require internal(dst);
+  require allowed_in(src);
+  
+  sent(src,dst) := true;
+}
+
+export send_from_internal
+export send_to_internal
+
+invariant [safety] sent(S,D) & internal(D) -> exists I. internal(I) & sent(I,S)
+
+#invariant [help_1] allowed_in(D) -> exists I. internal(I) & sent(I,D)
+#invariant [help_1_1] allowed_in(D) -> exists I. internal(I)
+#invariant [help_1_2] allowed_in(D) -> exists I. (I ~= D) & sent(I,D)
+
+#invariant [help_3_ic3po_required]	(forall N0, N1 . (sent(N1, N0) -> (internal(N0) | internal(N1))))
+#invariant [help_2_ic3po]	(forall N0 . (internal(N0) -> ~allowed_in(N0)))

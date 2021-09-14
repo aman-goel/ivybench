@@ -1,0 +1,54 @@
+#lang ivy1.7
+
+module total_order(r) = {
+    axiom r(X,X)                        # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+type node
+type epoch
+
+relation le(X:epoch, Y:epoch)
+instantiate total_order(le)
+individual zero:epoch
+axiom le(zero, X)
+
+relation gt(E:epoch, N:node)# the safety property
+
+relation held(N:node)
+relation transfer_msg(E:epoch, D:node)
+relation locked(E:epoch, N:node)
+
+individual first:node
+
+after init {
+    held(X) := X=first;
+    gt(X, N) := X~=zero;
+    transfer_msg(E, D) := false;
+    locked(E, N) := false;
+}
+
+action grant(src:node, dst:node, e:epoch) = {
+    require held(src);
+    require gt(e, src);
+    
+    held(src) := false;
+    transfer_msg(e, dst) := true;
+}
+
+action accept(dst:node, e:epoch) = {
+    require transfer_msg(e, dst);
+    
+    if gt(e, dst) {
+        held(dst) := true;
+        gt(E, dst) := true if ~le(E, e) else false;
+        locked(e, dst) := true;
+    };
+}
+
+export grant
+export accept
+
+invariant [safety] locked(E, N1) & locked(E, N2) -> N1 = N2

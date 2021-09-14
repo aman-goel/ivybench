@@ -1,0 +1,49 @@
+#lang ivy1.7
+
+#
+# This is an elaborated verion of client_server_ae.ivy from the code examples of:
+#
+# Bounded Quantifier Instantiation for Checking Inductive Invariants
+# Yotam M. Y. Feldman, Oded Padon, Neil Immerman, Mooly Sagiv, and Sharon Shoham. TACAS 2017, LMCS 2019.
+#
+# 
+
+type node
+type request
+type response
+
+relation match(R:request, P:response)
+
+relation request_sent(N:node, R:request)
+relation response_sent(N:node, P:response)
+relation response_received(N:node, P:response)	
+
+after init  {
+	request_sent(N,R) := false;
+	response_sent(N,P) := false;
+	response_received(N,P) := false;
+}
+
+action new_request(n:node, r:request) = {
+  request_sent(n,r) := true;
+}
+
+action respond(n:node, r:request, p:response) = {
+  require request_sent(n,r);
+  require match(r,p);
+  
+  response_sent(n,p) := true;
+}
+
+action receive_response(n:node, p:response) = {
+  require response_sent(n,p);
+  
+  response_received(n,p) := true;
+}
+
+export new_request
+export respond
+export receive_response
+
+invariant [safety] forall N,P. response_received(N,P) -> exists R. request_sent(N,R) & match(R,P)
+#invariant [help_1] forall N,P. response_sent(N,P) -> exists R. request_sent(N,R) & match(R,P)

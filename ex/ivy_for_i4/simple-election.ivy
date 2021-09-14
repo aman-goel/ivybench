@@ -1,0 +1,53 @@
+#lang ivy1.7
+
+################################################################################
+#
+# Types, relations and functions describing state of the network
+#
+################################################################################
+
+type acceptor
+type quorum
+type proposer
+
+# rounds are totally ordered with a least element called zero
+relation member(X: acceptor, Y: quorum)
+axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+relation start(P: proposer)
+relation promise(A: acceptor, P: proposer)
+
+relation leader(P: proposer)
+################################################################################
+#
+# Protocol description
+#
+################################################################################
+
+after init {
+    start(P) := false;
+    promise(A, P) := false;
+    leader(P) := false;
+}
+
+action send_1a(p: proposer) = {
+    start(p) := true;
+}
+
+action send_1b(a: acceptor, p: proposer) = {
+    require start(p);
+    require ~promise(a, P);
+    promise(a, p) := true;
+}
+
+action decide(p: proposer, q: quorum) = {
+    require member(A, q) -> promise(A, p);
+    leader(p) := true;
+}
+
+export send_1a
+export send_1b
+export decide
+
+# the safety property
+invariant leader(P1) & leader(P2) -> P1 = P2

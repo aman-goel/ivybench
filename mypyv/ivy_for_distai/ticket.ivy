@@ -1,0 +1,86 @@
+#lang ivy1.7
+
+type thread
+type ticket
+
+relation le(T0:ticket, T1:ticket)
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+individual zero:ticket
+axiom forall X. le(zero, X)
+
+relation pc1(T:thread)
+relation pc2(T:thread)
+relation pc3(T:thread)
+individual service:ticket
+individual next_ticket:ticket
+relation m(T0:thread, T1:ticket)  # use relation and not a function to be in EPR
+
+after init  {
+  pc1(T) := true;
+  pc2(T) := false;
+  pc3(T) := false;
+  service := zero;
+  next_ticket := zero;
+  m(T,K) := K = zero;
+}
+
+#action succ(x:ticket) returns (y:ticket) = {
+#	assume ~le(y,x) & forall Z:ticket. ~le(Z,x) -> le(y,Z)
+#}
+
+action step12(t:thread, y:ticket) = {
+  require pc1(t);
+  require (~le(y,next_ticket) & forall Z:ticket. ~le(Z,next_ticket) -> le(y,Z));
+  
+  m(t, K) := K = next_ticket;
+  pc1(t) := false;
+  pc2(t) := true;
+#  next_ticket := succ(next_ticket);
+  next_ticket := y;
+}
+
+action step23(t:thread, k:ticket) = {
+  require pc2(t);
+  require m(t,k);
+  require le(k, service);
+  
+  pc2(t) := false;
+  pc3(t) := true;
+}
+
+action step31(t:thread, y:ticket) = {
+  require pc3(t);
+  require (~le(y,service) & forall Z:ticket. ~le(Z,service) -> le(y,Z));
+  
+  pc3(t) := false;
+  pc1(t) := true;
+#  service := succ(service);
+  service := y;
+}
+
+export step12
+export step23
+export step31
+
+# safety property
+invariant [1000000] pc3(T1) & pc3(T2) -> T1 = T2
+
+# ecoding invariants
+#invariant [help_1] pc1(T) | pc2(T) | pc3(T)
+#invariant [help_2] ~pc1(T) | ~pc2(T)
+#invariant [help_3] ~pc1(T) | ~pc3(T)
+#invariant [help_4] ~pc2(T) | ~pc3(T)
+#invariant [help_5] m(T,K1) & m(T,K2) -> K1 = K2
+
+# inductive invariant for proving safety
+#invariant [help_6] next_ticket = zero -> m(T,zero)
+#invariant [help_7] next_ticket ~= zero & m(T,M) -> ~le(next_ticket,M)
+#invariant [help_8] (pc2(T) | pc3(T)) -> next_ticket ~= zero
+#invariant [help_9] m(T1,M) & m(T2,M) & M ~= zero -> T1 = T2
+#invariant [help_10] pc2(T) & m(T,M) -> le(service,M)
+#invariant [help_11] pc3(T) -> m(T,service)
+#invariant [help_12] le(service,next_ticket)
+#invariant [help_13] ~(~pc1(T1) & ~pc1(T2) & m(T1,zero) & m(T2,zero) & T1 ~= T2)

@@ -1,0 +1,156 @@
+#lang ivy1.7
+
+# An exact specification of the Paxos algorithm, as presented 
+# by Lamport at several occasions (like HowToWinATuringAward).
+
+type value
+type acceptor
+type quorum
+type ballot
+
+# A total order helper module
+module total_order(r) = {
+    axiom r(X, X)                       # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+relation le(X:ballot, Y:ballot)
+instantiate total_order(le)
+individual negone:ballot
+axiom le(negone, X)
+individual max:ballot
+axiom le(X, max)
+
+individual none:value
+
+relation member(A:acceptor, Q:quorum)
+axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+relation msg_1a(B:ballot)
+relation msg_1b(A:acceptor, B:ballot, MBAL:ballot, MVAL:value)
+relation msg_2a(B:ballot, V:value)
+relation msg_2b(A:acceptor, B:ballot, V:value)
+
+function maxBal(A:acceptor):ballot
+function maxVBal(A:acceptor):ballot
+function maxVal(A:acceptor):value
+
+# Definitions
+#relation chosenAt(B:ballot, V:value) = exists Q. forall A. member(A, Q) -> msg_2b(A, B, V)
+#relation chosen(V:value) = exists B. chosenAt(B, V)
+#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+#													(exists C:ballot. ~le(B, C) & 
+#														(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V)) & 
+#														(forall D:ballot. (~le(D, C) & ~le(B, D)) -> 
+#															(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(A, D, Vd))))))
+#relation isSafeAt(B:ballot, V:value) = exists Q:quorum. showsSafeAt(Q, B, V)
+#
+#relation showsSafeAtPaxosSimple(Q:quorum, B:ballot, V:value) =
+#		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(A, B, MBAL, MVAL)) & 
+#		(	(forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(A, B, MBAL, MVAL) & msg_2b(A, MBAL, MVAL))) |
+#			(exists MBAL.	(exists A. member(A, Q) & msg_1b(A, B, MBAL, V) & msg_2b(A, MBAL, V)) &
+#							(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(A, B, MBAL2, MVAL2) & msg_2b(A, MBAL2, MVAL2) -> le(MBAL2, MBAL)))
+#		))
+#relation isSafeAtPaxosSimple(B:ballot, V:value) = exists Q:quorum. showsSafeAtPaxosSimple(Q, B, V)
+#
+#relation showsSafeAtPaxos(Q:quorum, B:ballot, V:value) =
+#		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(A, B, MBAL, MVAL)) & 
+#			(	(forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(A, B, MBAL, MVAL) & MBAL ~= negone)) |
+#				(exists MBAL.	(exists A. member(A, Q) & msg_1b(A, B, MBAL, V) & (MBAL ~= negone)) &
+#								(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(A, B, MBAL2, MVAL2) & (MBAL2 ~= negone) -> le(MBAL2, MBAL)))
+#		))
+#relation isSafeAtPaxos(B:ballot, V:value) = exists Q:quorum. showsSafeAtPaxos(Q, B, V)
+
+after init {
+    maxBal(A) := negone;
+    maxVBal(A) := negone;
+    maxVal(A) := none;
+    msg_1a(B) := false;
+    msg_1b(A, B, MBAL, MVAL) := false;
+    msg_2a(B, V) := false;
+    msg_2b(A, B, V) := false;
+}
+
+action phase_1a(b:ballot) = {
+    require b ~= negone;
+    
+    msg_1a(b) := true;
+}
+
+action phase_1b(a:acceptor, b:ballot) = {
+    require b ~= negone;
+    require msg_1a(b);
+    require ~le(b, maxBal(a));
+    
+    maxBal(a) := b;
+    msg_1b(a, b, maxVBal(a), maxVal(a)) := true;
+}
+
+action phase_2a(b:ballot, v:value) = {
+    require b ~= negone;
+    require v ~= none;
+    require ~(exists V. msg_2a(b, V));
+	require exists Q:quorum.
+		(	(forall A. member(A, Q) -> exists MBAL, MVAL. msg_1b(A, b, MBAL, MVAL)) & 
+			(	(forall A, MBAL, MVAL. ~(member(A, Q) & msg_1b(A, b, MBAL, MVAL) & MBAL ~= negone)) |
+				(exists MBAL.	(exists A. member(A, Q) & msg_1b(A, b, MBAL, v) & (MBAL ~= negone)) &
+								(forall A, MBAL2, MVAL2. member(A, Q) & msg_1b(A, b, MBAL2, MVAL2) & (MBAL2 ~= negone) -> le(MBAL2, MBAL)))
+		));
+	
+    msg_2a(b, v) := true;
+}
+
+action phase_2b(a:acceptor, b:ballot, v:value) = {
+    require b ~= negone;
+    require v ~= none;
+    require msg_2a(b, v);
+    require le(maxBal(a), b);
+
+    maxBal(a) := b;
+    maxVBal(a) := b;
+    maxVal(a) := v;
+    msg_2b(a, b, v) := true;
+}
+
+export phase_1a
+export phase_1b
+export phase_2a
+export phase_2b
+
+# the safety property
+invariant [safety] forall V1, V2. 	(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V1)) & 
+									(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V2)) -> (V1 = V2)
+
+
+### Voting result -- 3A3Q2V4B -> 3A3Q2V4B
+invariant [ic3po1]	(forall A1, V1, B1 . (msg_2b(A1, B1, V1) -> 
+						(exists Q.
+							((forall A:acceptor. member(A, Q) -> le(B1, maxBal(A))) & 
+							(exists C:ballot. ~le(B1, C) & 
+								(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V1)) & 
+								(forall D:ballot. (~le(D, C) & ~le(B1, D)) -> 
+										(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(A, D, Vd))))))
+						)))
+invariant [ic3po2]	(forall V2, A1, B1, V1 . (((exists Q. forall A. member(A, Q) -> msg_2b(A, B1, V2)) & msg_2b(A1, B1, V1)) -> (V1 = V2)))
+###
+
+### PaxosSimple result -- 3A3Q2V4B -> 3A3Q3V4B
+invariant [ic3po3]	(forall B1, A1, MBAL, MVAL . (msg_1b(A1, B1, MBAL, MVAL) -> le(B1, maxBal(A1))))
+invariant [ic3po4]	(forall B1, V1 . (msg_2a(B1, V1) -> 
+						(exists Q.
+							((forall A:acceptor. member(A, Q) -> le(B1, maxBal(A))) & 
+							(exists C:ballot. ~le(B1, C) & 
+								(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V1)) & 
+								(forall D:ballot. (~le(D, C) & ~le(B1, D)) -> 
+										(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(A, D, Vd))))))
+						)))
+invariant [ic3po5]	(forall B1, V1, V2 . ((msg_2a(B1, V1) & msg_2a(B1, V2)) -> (V1 = V2)))
+invariant [ic3po6]	(forall A1, B1, V1 . (msg_2b(A1, B1, V1) -> msg_2a(B1, V1)))
+###
+
+### PaxosImplicit result -- 3A3Q2V4B -> 3A3Q2V5B
+invariant [ic3po7]	(forall B2, A1, V1, B1 . (msg_1b(A1, B2, B1, V1) -> (le(B1, negone) | msg_2b(A1, B1, V1) | le(B2, negone))))
+invariant [ic3po8]	(forall B2, B3, B1, V2, V1, A1 . ((msg_1b(A1, B1, B2, V2) & msg_2b(A1, B3, V1)) -> (le(B3, B2) | le(B1, B3))))
+###

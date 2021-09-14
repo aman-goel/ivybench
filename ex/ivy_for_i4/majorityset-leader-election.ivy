@@ -1,0 +1,60 @@
+#lang ivy1.7
+
+# an abstract leader election protocol based on majorities
+
+type node
+type nodeset
+
+relation member(X:node, Y:nodeset)
+relation majority(X:nodeset)
+axiom forall S1:nodeset, S2:nodeset. majority(S1) & majority(S2) -> exists N. member(N,S1) & member(N,S2)
+function emptyset : nodeset
+axiom forall N. ~member(N, emptyset)
+
+# the following axiom (not needed here) would create a function cycle
+# axiom forall N:node. exists S:nodeset. member(N,S)
+
+trusted isolate ns = {
+    action add(n:node, s1:nodeset) returns (s2:nodeset) = {
+        ensure forall N. member(N,s2) <-> (member(N, s1) | N=n);
+        ensure majority(s1) -> majority(s2);
+    }
+}
+
+relation vote(X:node, Y:node)
+relation leader(X:node)
+relation voters(X:node, Y:nodeset)
+
+after init {
+    vote(X,Y) := false;
+    leader(X) := false;
+    voters(X,Y) := Y = emptyset;
+}
+
+action voting(n1:node, n2:node) = {
+    require forall Y. ~vote(n1, Y);
+    vote(n1, n2) := true;
+}
+export voting
+
+action receive_vote(voter:node, n:node, vs:nodeset) = {
+    require vote(voter, n);
+    require voters(n,vs);
+    require ~member(voter, vs);
+    vs := ns.add(voter, vs);
+    voters(n,VS) := VS = vs;
+}
+export receive_vote
+
+action become_leader(n:node, vs:nodeset) = {
+    require voters(n,vs);
+    require majority(vs);
+    leader(n) := true;
+}
+export become_leader
+
+invariant [unique_leader] forall X,Y. leader(X) & leader(Y) -> X=Y
+#invariant [voters_functional] forall X,Y,Z. voters(X,Y) & voters(X,Z) -> Y=Z
+#invariant [unique_votes] vote(X,Y) & vote(X,Z) -> Y = Z
+#invariant [voters_voted] voters(X,VS) & member(Y,VS) -> vote(Y,X)
+#invariant [leader_has_majority] leader(X) -> exists VS. majority(VS) & voters(X,VS)

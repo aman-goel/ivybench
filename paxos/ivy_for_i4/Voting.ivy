@@ -1,0 +1,76 @@
+#lang ivy1.7
+
+# An exact specification of the Voting algorithm, as presented 
+# by Lamport at several occasions (like HowToWinATuringAward).
+
+type value
+type acceptor
+type quorum
+type ballot
+
+module total_order(r) = {
+    axiom r(X, X)                       # Reflexivity
+    axiom r(X, Y) & r(Y, Z) -> r(X, Z)  # Transitivity
+    axiom r(X, Y) & r(Y, X) -> X = Y    # Anti-symmetry
+    axiom r(X, Y) | r(Y, X)             # Totality
+}
+
+relation le(X:ballot, Y:ballot)
+instantiate total_order(le)
+individual negone:ballot
+axiom le(negone, X)
+individual max:ballot
+axiom le(X, max)
+
+relation member(A:acceptor, Q:quorum)
+axiom forall Q1:quorum, Q2:quorum. exists A:acceptor. member(A, Q1) & member(A, Q2)
+
+relation votes(A:acceptor, B:ballot, V:value)
+function maxBal(A:acceptor):ballot
+
+# Definitions
+#relation chosenAt(B:ballot, V:value) = exists Q. forall A. member(A, Q) -> votes(A, B, V)
+#relation chosen(V:value) = exists B. chosenAt(B, V)
+#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+#													(exists C:ballot. ~le(B, C) & 
+#														(C ~= negone -> exists A:acceptor. member(A, Q) & votes(A, C, V)) & 
+#														(forall D:ballot. (~le(D, C) & ~le(B, D)) -> 
+#															(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~votes(A, D, Vd))))))
+#relation isSafeAt(B:ballot, V:value) = exists Q:quorum. showsSafeAt(Q, B, V)
+
+
+after init {
+    votes(A, B, V) := false;
+    maxBal(A) := negone;
+}
+
+action increaseMaxBal(a:acceptor, b:ballot) = {
+    require b ~= negone;
+    require ~le(b, maxBal(a));
+
+    maxBal(a) := b;
+}
+
+action voteFor(a:acceptor, b:ballot, v:value) = {
+    require b ~= negone;
+    require le(maxBal(a), b);
+    require ~(exists V. votes(a, b, V));
+    require forall C:acceptor. (C ~= a) -> (forall V:value. votes(C, b, V) -> V = v);
+	require exists Q:quorum. 
+		(	(forall A:acceptor. member(A, Q) -> le(b, maxBal(A))) & 
+			(exists C:ballot. ~le(b, C) & 
+				(C ~= negone -> exists A:acceptor. member(A, Q) & votes(A, C, v)) & 
+				(forall D:ballot. (~le(D, C) & ~le(b, D)) -> 
+						(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~votes(A, D, Vd))))));
+
+    votes(a, b, v) := true;
+    maxBal(a) := b;
+}
+
+export increaseMaxBal
+export voteFor
+
+# Property
+invariant [safety] forall V1, V2. 	(exists B. exists Q. forall A. member(A, Q) -> votes(A, B, V1)) & 
+									(exists B. exists Q. forall A. member(A, Q) -> votes(A, B, V2)) -> (V1 = V2)
+

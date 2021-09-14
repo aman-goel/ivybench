@@ -1,0 +1,67 @@
+#lang ivy1.7
+
+type node
+type quorum
+
+relation member(N:node, Q:quorum)
+axiom forall Q1, Q2. exists N. member(N, Q1) & member(N, Q2)
+
+relation vote_request_msg(N0:node, N1:node)
+relation voted(N:node)
+relation vote_msg(N0:node, N1:node)
+relation votes(N0:node, N1:node)
+relation leader(N:node)
+individual voting_quorum: quorum
+
+after init  {
+	vote_request_msg(N1, N2) := false;
+	voted(N) := false;
+	vote_msg(N1, N2) := false;
+	votes(N1, N2) := false;
+	leader(N1) := false;
+}
+
+action send_request_vote(src: node, dst: node) = {
+	vote_request_msg(src, dst) := true;
+}
+
+action send_vote(src: node, dst: node, nondet:bool) = {
+  require ~voted(src);
+  require vote_request_msg(dst, src);
+  
+  vote_msg(src, dst) := true;
+  voted(src) := true;
+  vote_request_msg(src, dst) := nondet;
+}
+
+action recv_vote(n: node, sender: node) = {
+  require vote_msg(sender, n);
+  
+  votes(n, sender) := true;
+}
+
+action choose_voting_quorum(q: quorum, sn: node) = {
+  require forall N. member(N, q) -> votes(sn, N);
+  
+  voting_quorum := q;
+}
+
+action become_leader(n: node) = {
+  require member(N, voting_quorum) -> votes(n, N);
+  
+  leader(n) := true;
+}
+
+export send_request_vote
+export send_vote
+export recv_vote
+export choose_voting_quorum
+export become_leader
+
+# safety property:
+invariant [1000000] leader(N1) & leader(N2) -> N1 = N2
+
+#invariant [help_1] votes(N, N1) -> vote_msg(N1, N)
+#invariant [help_2] vote_msg(N, N1) & vote_msg(N, N2) -> N1 = N2
+#invariant [help_3] vote_msg(N, N1) -> voted(N)
+#invariant [help_4] leader(N) & member(N1, voting_quorum) -> votes(N, N1)

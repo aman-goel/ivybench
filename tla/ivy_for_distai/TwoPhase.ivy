@@ -1,0 +1,100 @@
+#lang ivy1.7
+
+type resource_manager
+
+relation working(R:resource_manager)
+relation prepared(R:resource_manager)
+relation committed(R:resource_manager)
+relation aborted(R:resource_manager)
+
+individual tm_init: bool
+individual tm_committed: bool
+individual tm_aborted: bool
+relation tm_prepared(R:resource_manager)
+
+relation msg_prepared(R:resource_manager)
+individual msg_commit: bool
+individual msg_abort: bool
+
+after init {
+	working(R) := true;
+	prepared(R) := false;
+	committed(R) := false;
+	aborted(R) := false;
+	
+	tm_init := true;
+	tm_committed := false;
+	tm_aborted := false;
+	tm_prepared(R) := false;
+	
+	msg_prepared(R) := false;
+	msg_commit := false;
+	msg_abort := false;
+}
+
+action tMRcvPrepared(rm:resource_manager) = {
+	require tm_init;
+	require msg_prepared(rm);
+	tm_prepared(rm) := true;
+}
+
+action tMCommit = {
+	require tm_init;
+	require forall R. tm_prepared(R);
+	tm_init := false;
+	tm_committed := true;
+	tm_aborted := false;
+	msg_commit := true;
+}
+
+action tMAbort = {
+	require tm_init;
+	tm_init := false;
+	tm_committed := false;
+	tm_aborted := true;
+	msg_abort := true;
+}
+
+action rMPrepare(rm:resource_manager) = {
+	require working(rm);
+	working(rm) := false;
+	prepared(rm) := true;
+	committed(rm) := false;
+	aborted(rm) := false;
+	msg_prepared(rm) := true;
+}
+
+action rMChooseToAbort(rm:resource_manager) = {
+	require working(rm);
+	working(rm) := false;
+	prepared(rm) := false;
+	committed(rm) := false;
+	aborted(rm) := true;
+}
+
+action rMRcvCommitMsg(rm:resource_manager) = {
+	require msg_commit;
+	working(rm) := false;
+	prepared(rm) := false;
+	committed(rm) := true;
+	aborted(rm) := false;
+}
+
+action rMRcvAbortMsg(rm:resource_manager) = {
+	require msg_abort;
+	working(rm) := false;
+	prepared(rm) := false;
+	committed(rm) := false;
+	aborted(rm) := true;
+}
+
+export tMRcvPrepared
+export tMCommit
+export tMAbort
+
+export rMPrepare
+export rMChooseToAbort
+export rMRcvCommitMsg
+export rMRcvAbortMsg
+
+invariant [1000000] (forall R1, R2. ~(aborted(R1) & committed(R2)) )

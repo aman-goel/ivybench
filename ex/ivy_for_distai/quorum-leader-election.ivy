@@ -1,0 +1,38 @@
+#lang ivy1.7
+
+# Source: https://github.com/sat-group/cfg-enum/blob/master/examples/quorum-leader-election.ivy
+
+type node
+type nset
+
+relation isleader(N:node)
+relation voted(N:node, M:node)
+relation member(N: node, Q: nset)
+relation majority(N:nset)
+individual quorum : nset
+
+axiom forall S1, S2. exists N . majority(S1) & majority(S2) -> member(N, S1) & member(N, S2)
+
+after init {
+	voted(N, M) := false;
+	isleader(N) := false;
+}
+
+action vote(v : node , n : node) = {
+    require (forall M:node . ~voted(v, M));
+    voted(v, n) := true;
+}
+
+action become_leader(n : node , s : nset) = {
+	require majority(s);
+	require forall M:node . member(M, s) -> voted(M, n);
+	isleader(n) := true;
+	quorum := s;
+}
+
+export vote
+export become_leader
+
+invariant [1000000] (isleader(N) & isleader(M)) -> N = M
+#invariant voted(N,M) & voted(N,O) -> M = O
+#invariant isleader(N) -> (majority(quorum) & (member(M,quorum) -> voted(M, N)))

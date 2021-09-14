@@ -1,0 +1,86 @@
+#lang ivy1.7
+
+module ring_topology(carrier) = {
+
+    relation btw(X:carrier,Y:carrier, Z:carrier) # Y is on the acyclic path from X to Z
+
+    # Axiom defining the btw relation - note it's not reflexive
+    # not needed: axiom btw(X,Y,Z) -> X ~= Y & X ~= Z & Y ~= Z  # anti-reflexive
+    axiom btw(W,X,Y) & btw(W,Y,Z) -> btw(W,X,Z)  # transitive
+    axiom btw(W,X,Y) -> ~btw(W,Y,X)  # acyclic
+    axiom btw(W,X,Y) | btw(W,Y,X) | W=X | W=Y | X=Y  # total
+    axiom btw(X,Y,Z) -> btw(Y,Z,X)  # cyclic permutations
+
+#    action get_next(x:carrier) returns (y:carrier) = {
+#        assume x ~= y & ((Z ~= x & Z ~= y) -> btw(x,y,Z))
+#    }
+#
+#    action get_prev(y:carrier) returns (x:carrier) = {
+#        assume y ~= x & ((Z ~= y & Z ~= x) -> btw(y,x,Z))
+#    }
+
+}
+
+type node
+type value
+type pcstate
+
+instantiate ring : ring_topology(node)
+
+relation x(N:node, V:value)
+function y(N:node) : value
+
+individual zero: value
+individual one: value
+axiom zero ~= one
+
+function pc(N:node) : pcstate
+individual a1: pcstate
+individual a2: pcstate
+individual b: pcstate
+individual done: pcstate
+axiom (a1 ~= a2) & (a1 ~= b) & (a1 ~= done) & (a2 ~= b) & (a2 ~= done) & (b ~= done)
+#axiom forall P:pcstate. (P = a1) | (P = a2) | (P = b) | (P = done)
+
+after init {
+	x(N, V) := (V = zero);
+	y(N) := zero;
+	pc(N) := a1;
+}
+
+action step_a1(self:node) = {
+	require (pc(self) = a1);
+	x(self, V) := (V = zero | V = one);
+	pc(self) := a2;
+}
+
+action step_a2(self:node) = {
+	require (pc(self) = a2);
+	x(self, V) := (V = one);
+	pc(self) := b;
+}
+
+action step_b(self:node, v:value) = {
+	require (pc(self) = b);
+	require (self ~= prev & ((Z ~= self & Z ~= prev) -> ring.btw(self,prev,Z)));
+	require x(prev, v);
+	y(self) := v;
+	pc(self) := done;
+}
+
+export step_a1
+export step_a2
+export step_b
+
+invariant [1000000] (forall S:node. pc(S) = done) -> (exists I:node. y(I) = one)
+
+### Proof certificate (required): #3
+#invariant [1_ic3po_required]	(forall N0 . ((pc(N0) = a1) | x(N0, one)))
+#invariant [3_ic3po_required]	(forall N0, V1, V0 . ((x(N0, V1) & x(N0, V0)) -> ((V1 = V0) | (pc(N0) = a2))))
+###
+
+### Optional invariants: #3
+#invariant [2_ic3po_optional]	(forall N0 . ((a2 = pc(N0)) -> x(N0, one)))
+#invariant [4_ic3po_optional]	(forall N0 . ((b = pc(N0)) -> x(N0, one)))
+#invariant [5_ic3po_optional]	(forall N0, V2 . (x(N0, V2) -> ((zero = V2) | (one = V2))))
+###

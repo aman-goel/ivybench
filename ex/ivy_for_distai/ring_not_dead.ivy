@@ -1,0 +1,66 @@
+#lang ivy1.7
+
+type node
+
+relation le(N0:node, N1:node)
+
+axiom le(X,X)
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)
+axiom le(X, Y) & le(Y, X) -> X = Y
+axiom le(X, Y) | le(Y, X)
+
+relation btw(N0:node, N1:node, N2:node)
+
+axiom btw(W,X,Y) & btw(W,Y,Z) -> btw(W,X,Z)
+axiom btw(W,X,Y) -> ~btw(W,Y,X)
+axiom btw(W,X,Y) | btw(W,Y,X) | W=X | W=Y | X=Y
+axiom btw(X,Y,Z) -> btw(Y,Z,X)
+axiom exists N. forall X. le(X, N) # there is a node with maximal id
+
+relation leader(N:node)
+relation pending(N0:node, N1:node)
+relation sent(N:node)
+
+after init  {
+	leader(N) := false;
+	pending(N1, N2) := false;
+	sent(N) := false;
+}
+
+action send(n: node, next: node) = {
+  require (forall Z. n ~= next & ((Z ~= n & Z ~= next) -> btw(n,next,Z)));
+  
+  pending(n, next) := true;
+  sent(n) := true;
+}
+
+action recv(sender: node, n: node, next: node) = {
+  require (forall Z. n ~= next & ((Z ~= n & Z ~= next) -> btw(n,next,Z)));
+  require pending(sender, n);
+  
+  pending(sender, n) := *;
+  if sender = n {
+    leader(n) := true;
+  }
+  else {
+    if le(n, sender) {
+      pending(sender, next) := true;
+    }
+  }
+}
+
+export send
+export recv
+
+#invariant [safety_one_leader] leader(L1) & leader(L2) -> L1 = L2
+invariant [1000000] (exists L. leader(L)) | (exists M,N. pending(M, N)) | (exists N. ~sent(N))
+
+#invariant [help_1_leader_max] leader(L) -> le(N, L)
+#invariant [help_2] pending(S, D) & btw(S, N, D) -> le(N, S)
+#invariant [help_3] pending(L, L) -> le(N, L)
+
+#invariant [help_4_for_not_dead] exists N. (forall X. le(X,N)) & (~sent(N) | leader(N) | (exists M. pending(N, M)))
+
+# exp
+#invariant [help_4_for_not_dead2] ~(forall N. (exists X. (X ~= N) & ~le(X,N)) | (sent(N) & ~leader(N) & (forall M. ~pending(N, M))))
+#invariant [help_5] ~(forall N. sent(N) & (forall M. ~pending(N, M)) & (forall M. (M ~= N) -> le(M, N)) )

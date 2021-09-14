@@ -1,0 +1,40 @@
+#lang ivy1.7
+
+type node
+type quorum
+type value
+
+relation member(N:node, Q:quorum)
+axiom forall Q1, Q2. exists N. member(N, Q1) & member(N, Q2)
+
+relation voted(N:node)
+relation vote(N:node, V:value)
+relation decided(V:value)
+
+after init {
+    voted(N) := false;
+    vote(N, V) := false;
+    decided(V) := false;
+}
+
+action cast_vote(n: node, v: value) = {
+    require ~voted(n);
+    
+    vote(n, v) := true;
+    voted(n) := true;
+}
+
+action decide(v: value, q: quorum) = {
+    require member(N,q) -> vote(N,v);
+    
+    decided(v) := true;
+}
+
+export cast_vote
+export decide
+
+invariant [safety] decided(V1) & decided(V2) -> V1 = V2
+
+#invariant [help_1] vote(N,V) -> voted(N)
+#invariant [help_2] vote(N, V1) & vote(N, V2) -> V1 = V2
+#invariant [help_3] forall V. decided(V) -> exists Q. forall N. member(N, Q) -> vote(N, V)
