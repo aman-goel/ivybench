@@ -26,12 +26,12 @@ relation member(A:acceptor, Q:quorum)
 axiom forall Q1:quorum, Q2:quorum. exists A:acceptor. member(A, Q1) & member(A, Q2)
 
 relation votes(A:acceptor, B:ballot, V:value)
-function maxBal(A:acceptor):ballot
+function maxbal(A:acceptor):ballot
 
 # Definitions
 #relation chosenAt(B:ballot, V:value) = exists Q. forall A. member(A, Q) -> votes(A, B, V)
 #relation chosen(V:value) = exists B. chosenAt(B, V)
-#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxbal(A))) & 
 #													(exists C:ballot. ~le(B, C) & 
 #														(C ~= negone -> exists A:acceptor. member(A, Q) & votes(A, C, V)) & 
 #														(forall D:ballot. (~le(D, C) & ~le(B, D)) -> 
@@ -41,33 +41,33 @@ function maxBal(A:acceptor):ballot
 
 after init {
     votes(A, B, V) := false;
-    maxBal(A) := negone;
+    maxbal(A) := negone;
 }
 
-action increaseMaxBal(a:acceptor, b:ballot) = {
+action increasemaxbal(a:acceptor, b:ballot) = {
     require b ~= negone;
-    require ~le(b, maxBal(a));
+    require ~le(b, maxbal(a));
 
-    maxBal(a) := b;
+    maxbal(a) := b;
 }
 
 action voteFor(a:acceptor, b:ballot, v:value) = {
     require b ~= negone;
-    require le(maxBal(a), b);
+    require le(maxbal(a), b);
     require ~(exists V. votes(a, b, V));
     require forall C:acceptor. (C ~= a) -> (forall V:value. votes(C, b, V) -> V = v);
 	require exists Q:quorum. 
-		(	(forall A:acceptor. member(A, Q) -> le(b, maxBal(A))) & 
+		(	(forall A:acceptor. member(A, Q) -> le(b, maxbal(A))) & 
 			(exists C:ballot. ~le(b, C) & 
 				(C ~= negone -> exists A:acceptor. member(A, Q) & votes(A, C, v)) & 
 				(forall D:ballot. (~le(D, C) & ~le(b, D)) -> 
 						(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~votes(A, D, Vd))))));
 
     votes(a, b, v) := true;
-    maxBal(a) := b;
+    maxbal(a) := b;
 }
 
-export increaseMaxBal
+export increasemaxbal
 export voteFor
 
 # Property

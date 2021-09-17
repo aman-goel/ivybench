@@ -75,23 +75,19 @@ after init {
 	decision(N,R,V) := false;
 }
 
-action send_1a = {
+action send_1a(r:round) = {
     # a proposer selects a round and sends a message asking nodes to join the round
-    local r:round {
-        assume r ~= negone;
-        one_a(r) := true
-    }
+	assume r ~= negone;
+	one_a(r) := true;
 }
 
 
-action join_round = {
+action join_round(n:node, r:round, maxr:round, v:value) = {
     # receive 1a and answer with 1b
-    local n:node, r:round {
         assume r ~= negone;
         assume one_a(r);
         assume ~left_rnd(n,r);
 
-        local maxr:round, v:value {
             # find the maximal vote in a round less than r
             assume ((maxr = negone & forall MAXR:round,V:value. ~(~le(r,MAXR) & vote(n,MAXR,V))) |
                     (maxr ~= negone & ~le(r,maxr) & vote(n,maxr,v) &
@@ -100,16 +96,13 @@ action join_round = {
             # send the 1b message
             one_b_max_vote(n,r,maxr,v) := true;
             one_b(n,r) := true;
-            left_rnd(n,R) := left_rnd(n,R) | ~le(r,R)
-        }
-    }
+            left_rnd(n,R) := left_rnd(n,R) | ~le(r,R);
 }
 
 
 
-action propose = {
+action propose(r:round, v:value) = {
     # receive a quorum of 1b's and send a 2a (proposal)
-    local r:round, v:value {
         assume r ~= negone;
         assume ~proposal(r,V);
 		assume exists Qin.
@@ -123,27 +116,22 @@ action propose = {
 			)
 		);
 		
-		proposal(r, v) := true
-    }
+		proposal(r, v) := true;
 }
 
-action cast_vote = {
+action cast_vote(n:node, v:value, r:round) = {
     # receive a 2a and send 2b
-    local n:node, v:value, r:round {
         assume r ~= negone;
         assume ~left_rnd(n,r);
         assume proposal(r, v);
-        vote(n, r, v) := true
-    }
+        vote(n, r, v) := true;
 }
 
-action decide = {
+action decide(n:node, r:round, v:value) = {
     # get 2b from a quorum
-    local n:node, r:round, v:value {
         assume r ~= negone;
         assume exists Q. forall N. member(N, Q) -> vote(N, r, v);
-        decision(n, r, v) := true
-    }
+        decision(n, r, v) := true;
 }
 
 export send_1a

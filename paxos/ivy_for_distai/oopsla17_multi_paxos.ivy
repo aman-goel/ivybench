@@ -52,8 +52,8 @@ relation proposal(I:inst, R:round, V:value) # 2a
 relation active(R:round)  # round R has received a quorum of 1b and can now propose new values
 relation vote(N:node, I:inst, R:round, V:value) # 2b
 relation decision(N:node, I:inst, R:round, V:value) # got 2b from a quorum
-individual maxr(M:votemap,I:inst) : round
-individual maxv(M:votemap,I:inst) : value
+function maxr(M:votemap,I:inst) : round
+function maxv(M:votemap,I:inst) : value
 
 after init {
 	one_a(R) := false;
@@ -80,17 +80,14 @@ after init {
 #relation isSafeAtMultiPaxos(R:round, M:votemap) = exists Q:quorum . showsSafeAtMultiPaxos(Q, R, M)
 
 
-action send_1a = {
-  local r:round {
+action send_1a(r:round) = {
     # a proposer selects a round and sends a message asking nodes to join the round
     assume r ~= negone;
-    one_a(r) := true
-  }
+    one_a(r) := true;
 }
 
 
-action join_round = {
-  local n:node, r:round, m:votemap {
+action join_round(n:node, r:round, m:votemap) = {
     # receive 1a and answer with 1b
     assume r ~= negone;
     assume one_a(r);
@@ -106,12 +103,10 @@ action join_round = {
     one_b_msg(n,r,m) := true;
     # update code:
     left_round(n,R) := left_round(n,R) | ~le(r,R);
-    joined_round(n,r) := true
-  }
+    joined_round(n,r) := true;
 }
 
-action receive_join_acks = {
-  local r:round, m:votemap {
+action receive_join_acks(r:round, m:votemap) = {
     # receive a quorum of 1b's, activate round and propose for instances that have choosable values at lower rounds
     assume r ~= negone;
     assume ~active(r); # this happens only once
@@ -128,40 +123,33 @@ action receive_join_acks = {
     # activate round
     active(r) := true;
     # propose all choosable values
-    proposal(I, r, V) := proposal(I, r, V) | (maxr(m,I) ~= negone & V = maxv(m,I))
-  }
+    proposal(I, r, V) := proposal(I, r, V) | (maxr(m,I) ~= negone & V = maxv(m,I));
 }
 
 
-action propose = {
-  local r:round, i:inst, v:value {
+action propose(r:round, i:inst, v:value) = {
     # propose a new arbitrary value an available instance in an active round
     assume r ~= negone;
     assume active(r);
     assume ~proposal(i, r, V);
-    proposal(i, r, v) := true
-  }
+    proposal(i, r, v) := true;
 }
 
 
-action cast_vote = {
-  local n:node, v:value, r:round, i:inst {
+action cast_vote(n:node, v:value, r:round, i:inst) = {
     # receive a 2a and send 2b
     assume r ~= negone;
     assume ~left_round(n,r);
     assume proposal(i, r, v);
-    vote(n, i, r, v) := true
-  }
+    vote(n, i, r, v) := true;
 }
 
 
-action decide = {
-  local n:node, r:round, v:value, i:inst {
+action decide(n:node, r:round, v:value, i:inst) = {
     # get 2b from a quorum
     assume r ~= negone;
     assume exists Q. forall N. member(N, Q) -> vote(N, i, r, v);
-    decision(n, i, r, v) := true
-  }
+    decision(n, i, r, v) := true;
 }
 
 

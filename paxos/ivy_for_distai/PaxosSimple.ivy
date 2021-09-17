@@ -34,12 +34,12 @@ relation msg_1a(B:ballot)
 relation msg_1b(A:acceptor, B:ballot)
 relation msg_2a(B:ballot, V:value)
 relation msg_2b(A:acceptor, B:ballot, V:value)
-function maxBal(A:acceptor):ballot
+function maxbal(A:acceptor):ballot
 
 # Definitions
 #relation chosenAt(B:ballot, V:value) = exists Q. forall A. member(A, Q) -> msg_2b(A, B, V)
 #relation chosen(V:value) = exists B. chosenAt(B, V)
-#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxBal(A))) & 
+#relation showsSafeAt(Q:quorum, B:ballot, V:value) = ((forall A:acceptor. member(A, Q) -> le(B, maxbal(A))) & 
 #													(exists C:ballot. ~le(B, C) & 
 #														(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V)) & 
 #														(forall D:ballot. (~le(D, C) & ~le(B, D)) -> 
@@ -55,7 +55,7 @@ function maxBal(A:acceptor):ballot
 #relation isSafeAtPaxosSimple(B:ballot, V:value) = exists Q:quorum. showsSafeAtPaxosSimple(Q, B, V)
 
 after init {
-    maxBal(A) := negone;
+    maxbal(A) := negone;
     msg_1a(B) := false;
     msg_1b(A, B) := false;
     msg_2a(B, V) := false;
@@ -71,9 +71,9 @@ action phase_1a(b:ballot) = {
 action phase_1b(a:acceptor, b:ballot) = {
     require b ~= negone;
     require msg_1a(b);
-    require ~le(b, maxBal(a));
+    require ~le(b, maxbal(a));
     
-    maxBal(a) := b;
+    maxbal(a) := b;
     msg_1b(a, b) := true;
 }
 
@@ -93,9 +93,9 @@ action phase_2a(b:ballot, v:value) = {
 action phase_2b(a:acceptor, b:ballot, v:value) = {
     require b ~= negone;
     require msg_2a(b, v);
-    require le(maxBal(a), b);
+    require le(maxbal(a), b);
 
-    maxBal(a) := b;
+    maxbal(a) := b;
     msg_2b(a, b, v) := true;
 }
 
@@ -105,18 +105,15 @@ export phase_2a
 export phase_2b
 
 # the safety property
-invariant [1000000] forall V1, V2. 	(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V1)) & 
-									(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V2)) -> (V1 = V2)
-
-
-### Voting result -- 3A3Q2V4B -> 3A3Q2V4B
-invariant [1100000]	(forall A1, V1, B1 . (msg_2b(A1, B1, V1) -> 
+invariant [1000000] (forall V1, V2. 	(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V1)) & 
+									(exists B. exists Q. forall A. member(A, Q) -> msg_2b(A, B, V2)) -> (V1 = V2)) &
+					(forall A1, V1, B1 . (msg_2b(A1, B1, V1) -> 
 						(exists Q.
-							((forall A:acceptor. member(A, Q) -> le(B1, maxBal(A))) & 
+							((forall A:acceptor. member(A, Q) -> le(B1, maxbal(A))) & 
 							(exists C:ballot. ~le(B1, C) & 
 								(C ~= negone -> exists A:acceptor. member(A, Q) & msg_2b(A, C, V1)) & 
 								(forall D:ballot. (~le(D, C) & ~le(B1, D)) -> 
 										(forall A:acceptor. member(A, Q) -> (forall Vd:value. ~msg_2b(A, D, Vd))))))
-						)))
-invariant [1200000]	(forall V2, A1, B1, V1 . (((exists Q. forall A. member(A, Q) -> msg_2b(A, B1, V2)) & msg_2b(A1, B1, V1)) -> (V1 = V2)))
+						))) &
+					(forall V2, A1, B1, V1 . (((exists Q. forall A. member(A, Q) -> msg_2b(A, B1, V2)) & msg_2b(A1, B1, V1)) -> (V1 = V2)))
 ###

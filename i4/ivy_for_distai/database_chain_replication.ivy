@@ -17,12 +17,12 @@ module total_order(r) = {
 # Modules for lone and injective relations
 #
 ################################################################################
-module lone(f) = {
-    axiom (f(X, Y1) & f(X, Y2)) -> Y1 = Y2
-}
-module injective(f) = {
-    axiom (f(X1, Y) & f(X2, Y)) -> X1 = X2
-}
+#module lone(f) = {
+#    axiom (f(X, Y1) & f(X, Y2)) -> Y1 = Y2
+#}
+#module injective(f) = {
+#    axiom (f(X1, Y) & f(X2, Y)) -> X1 = X2
+#}
 
 ################################################################################
 #
@@ -42,9 +42,9 @@ instantiate total_order(le)
 # transaction zero is a special transaction, before every transaction,
 # and it reads and writes to all keys
 individual zero:transaction
-axiom [here] le(zero, X)
-individual max:transaction
-axiom le(X, max)
+axiom le(zero, X)
+#individual max:transaction
+#axiom le(X, max)
 
 # Each operation reads and writes one key
 relation op_reads_key(Op: operation, K: key) # OP reads k
@@ -74,7 +74,8 @@ axiom op_writes_key(Op, K) & node_for_key(K, N1) &  op_node(Op, N2) -> N1 = N2 #
 relation op_in_tx(Tx : transaction, Op: operation) # An operation of transaction is op
 
 # Each op is in a single Tx.
-instantiate injective(op_in_tx)
+#instantiate injective(op_in_tx)
+axiom (op_in_tx(X1, Y) & op_in_tx(X2, Y)) -> X1 = X2
 
 relation oporder(X:operation, Y:operation)
 axiom oporder(X, X) # Reflexive
