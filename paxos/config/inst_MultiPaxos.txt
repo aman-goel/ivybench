@@ -1,0 +1,8 @@
+5
+value=2
+acceptor=3
+quorum=3
+ballot=4
+instances=2
+
+0

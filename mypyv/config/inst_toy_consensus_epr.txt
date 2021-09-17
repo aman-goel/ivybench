@@ -1,0 +1,6 @@
+3
+quorum=3
+node=3
+value=2
+
+0

@@ -1,0 +1,6 @@
+3
+quorum_a=3
+node=3
+quorum_b=3
+
+0

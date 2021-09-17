@@ -60,7 +60,7 @@ action step_a2(self:node) = {
 	pc(self) := b;
 }
 
-action step_b(self:node, v:value) = {
+action step_b(self:node, v:value, prev:node) = {
 	require (pc(self) = b);
 	require (self ~= prev & ((Z ~= self & Z ~= prev) -> ring.btw(self,prev,Z)));
 	require x(prev, v);

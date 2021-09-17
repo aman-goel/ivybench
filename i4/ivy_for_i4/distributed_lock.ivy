@@ -30,6 +30,8 @@ relation le(X:epoch, Y:epoch)
 instantiate total_order(le)
 individual zero:epoch
 axiom le(zero, X)
+individual max:epoch
+axiom le(X, max)
 
 function ep(N:node) : epoch # ep(n) is the current epoch of node n
 

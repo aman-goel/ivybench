@@ -6,7 +6,7 @@
 (define-fun .key ((S key)) key (! S :sort 1))
 (define-fun .node ((S node)) node (! S :sort 2))
 (define-fun .operation ((S operation)) operation (! S :sort 2))
-(define-fun .transaction ((S transaction)) transaction (! S :sort 0))
+(define-fun .transaction ((S transaction)) transaction (! S :sort 4))
 
 (declare-fun __abort_tx (transaction) Bool)
 (declare-fun __commit_tx (transaction) Bool)
@@ -30,6 +30,7 @@
 (define-fun .write_tx ((V0 transaction) (V1 key)) Bool (! (__write_tx V0 V1) :next write_tx))
 
 (declare-fun le (transaction transaction) Bool)
+(declare-fun max () transaction)
 (declare-fun node_for_key (key node) Bool)
 (declare-fun op_in_tx (transaction operation) Bool)
 (declare-fun op_node (operation node) Bool)
@@ -39,6 +40,7 @@
 (declare-fun zero () transaction)
 
 (define-fun .le ((V0 transaction) (V1 transaction)) Bool (! (le V0 V1) :global true))
+(define-fun .max () transaction (! max :global true))
 (define-fun .node_for_key ((V0 key) (V1 node)) Bool (! (node_for_key V0 V1) :global true))
 (define-fun .op_in_tx ((V0 transaction) (V1 operation)) Bool (! (op_in_tx V0 V1) :global true))
 (define-fun .op_node ((V0 operation) (V1 node)) Bool (! (op_node V0 V1) :global true))
@@ -58,7 +60,7 @@
  :invar-property 0))
 
 (define-fun .axiom () Bool (! 
- (let (($v (and (forall ((X transaction)) (le X X)) (forall ((X transaction) (Y transaction) (Z transaction)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X transaction) (Y transaction)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X transaction) (Y transaction)) (or (le X Y) (le Y X))) (forall ((X transaction)) (le zero X)) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_reads_key X Y1) (op_reads_key X Y2)) (= Y1 Y2))) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_writes_key X Y1) (op_writes_key X Y2)) (= Y1 Y2))) (forall ((K1 key) (K2 key) (Op operation)) (=> (and (op_reads_key Op K1) (op_writes_key Op K2)) (not (= K1 K2)))) (forall ((X operation) (Y1 node) (Y2 node)) (=> (and (op_node X Y1) (op_node X Y2)) (= Y1 Y2))) (forall ((X key) (Y1 node) (Y2 node)) (=> (and (node_for_key X Y1) (node_for_key X Y2)) (= Y1 Y2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_reads_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_writes_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((X1 transaction) (X2 transaction) (Y operation)) (=> (and (op_in_tx X1 Y) (op_in_tx X2 Y)) (= X1 X2))) (forall ((X operation)) (oporder X X)) (forall ((X operation) (Y operation) (Z operation)) (=> (and (oporder X Y) (oporder Y Z)) (oporder X Z))) (forall ((X operation) (Y operation)) (=> (and (oporder X Y) (oporder Y X)) (= X Y))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (op_in_tx T Y)) (or (oporder X Y) (oporder Y X)))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (or (oporder X Y) (oporder Y X))) (op_in_tx T Y))) (forall ((N1 node) (N2 node) (O1 operation) (O2 operation) (T transaction)) (=> (and (op_in_tx T O1) (op_in_tx T O2) (not (= O1 O2)) (op_node O1 N1) (op_node O2 N2)) (not (= N1 N2)))))
+ (let (($v (and (forall ((X transaction)) (le X X)) (forall ((X transaction) (Y transaction) (Z transaction)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X transaction) (Y transaction)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X transaction) (Y transaction)) (or (le X Y) (le Y X))) (forall ((X transaction)) (le zero X)) (forall ((X transaction)) (le X max)) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_reads_key X Y1) (op_reads_key X Y2)) (= Y1 Y2))) (forall ((X operation) (Y1 key) (Y2 key)) (=> (and (op_writes_key X Y1) (op_writes_key X Y2)) (= Y1 Y2))) (forall ((K1 key) (K2 key) (Op operation)) (=> (and (op_reads_key Op K1) (op_writes_key Op K2)) (not (= K1 K2)))) (forall ((X operation) (Y1 node) (Y2 node)) (=> (and (op_node X Y1) (op_node X Y2)) (= Y1 Y2))) (forall ((X key) (Y1 node) (Y2 node)) (=> (and (node_for_key X Y1) (node_for_key X Y2)) (= Y1 Y2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_reads_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((K key) (N1 node) (N2 node) (Op operation)) (=> (and (op_writes_key Op K) (node_for_key K N1) (op_node Op N2)) (= N1 N2))) (forall ((X1 transaction) (X2 transaction) (Y operation)) (=> (and (op_in_tx X1 Y) (op_in_tx X2 Y)) (= X1 X2))) (forall ((X operation)) (oporder X X)) (forall ((X operation) (Y operation) (Z operation)) (=> (and (oporder X Y) (oporder Y Z)) (oporder X Z))) (forall ((X operation) (Y operation)) (=> (and (oporder X Y) (oporder Y X)) (= X Y))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (op_in_tx T Y)) (or (oporder X Y) (oporder Y X)))) (forall ((T transaction) (X operation) (Y operation)) (=> (and (op_in_tx T X) (or (oporder X Y) (oporder Y X))) (op_in_tx T Y))) (forall ((N1 node) (N2 node) (O1 operation) (O2 operation) (T transaction)) (=> (and (op_in_tx T O1) (op_in_tx T O2) (not (= O1 O2)) (op_node O1 N1) (op_node O2 N2)) (not (= N1 N2)))))
  ))
  (and $v))
  :axiom true))

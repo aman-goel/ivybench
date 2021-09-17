@@ -8,6 +8,8 @@ axiom le(X, Y) & le(Y, X) -> X = Y
 axiom le(X, Y) | le(Y, X)
 immutable constant zero:ticket
 axiom forall X. le(zero, X)
+immutable constant max:ticket
+axiom forall X. le(X, max)
 
 mutable relation pc1(thread)
 mutable relation pc2(thread)

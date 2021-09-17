@@ -1,0 +1,6 @@
+3
+acceptor=3
+quorum=3
+proposer=2
+
+0

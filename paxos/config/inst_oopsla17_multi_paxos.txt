@@ -1,0 +1,9 @@
+6
+value=2
+node=3
+quorum=3
+round=4
+inst=2
+votemap=2
+
+0

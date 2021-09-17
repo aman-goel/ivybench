@@ -2,7 +2,7 @@
 (declare-sort ticket 0)
 
 (define-fun .thread ((S thread)) thread (! S :sort 2))
-(define-fun .ticket ((S ticket)) ticket (! S :sort 0))
+(define-fun .ticket ((S ticket)) ticket (! S :sort 4))
 
 (declare-fun __m (thread ticket) Bool)
 (declare-fun __next_ticket () ticket)
@@ -26,9 +26,11 @@
 (define-fun .service () ticket (! __service :next service))
 
 (declare-fun le (ticket ticket) Bool)
+(declare-fun max () ticket)
 (declare-fun zero () ticket)
 
 (define-fun .le ((V0 ticket) (V1 ticket)) Bool (! (le V0 V1) :global true))
+(define-fun .max () ticket (! max :global true))
 (define-fun .zero () ticket (! zero :global true))
 
 (define-fun .prop () Bool (! 
@@ -38,7 +40,7 @@
  :invar-property 0))
 
 (define-fun .axiom () Bool (! 
- (let (($v (and (forall ((X ticket)) (le X X)) (forall ((X ticket) (Y ticket) (Z ticket)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X ticket) (Y ticket)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X ticket) (Y ticket)) (or (le X Y) (le Y X))) (forall ((X ticket)) (le zero X)))
+ (let (($v (and (forall ((X ticket)) (le X X)) (forall ((X ticket) (Y ticket) (Z ticket)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X ticket) (Y ticket)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X ticket) (Y ticket)) (or (le X Y) (le Y X))) (forall ((X ticket)) (le zero X)) (forall ((X ticket)) (le X max)))
  ))
  (and $v))
  :axiom true))

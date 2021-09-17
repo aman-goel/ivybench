@@ -14,6 +14,8 @@ relation le(X:epoch, Y:epoch)
 instantiate total_order(le)
 individual zero:epoch
 axiom le(zero, X)
+individual max:epoch
+axiom le(X, max)
 
 relation gt(E:epoch, N:node)# the safety property
 

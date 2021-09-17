@@ -1,0 +1,8 @@
+5
+value=2
+acceptor=3
+quorum1=3
+quorum2=3
+ballot=4
+
+0

@@ -8,6 +8,8 @@ axiom le(X, Y) & le(Y, X) -> X = Y
 axiom le(X, Y) | le(Y, X)
 immutable constant zero:epoch
 axiom le(zero, X)
+immutable constant max:epoch
+axiom le(X, max)
 
 mutable relation gt(epoch, node)
 mutable relation held(node)

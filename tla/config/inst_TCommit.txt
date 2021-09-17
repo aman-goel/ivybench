@@ -1,0 +1,4 @@
+1
+resource_manager=2
+
+0

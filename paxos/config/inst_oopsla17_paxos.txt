@@ -1,0 +1,7 @@
+4
+value=2
+node=3
+quorum=3
+round=4
+
+0
