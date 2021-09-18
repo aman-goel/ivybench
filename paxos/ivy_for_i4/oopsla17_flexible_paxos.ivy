@@ -37,8 +37,8 @@ instantiate total_order(le)
 
 individual negone:round
 axiom le(negone, X)
-individual max:round
-axiom le(X, max)
+#individual max:round
+#axiom le(X, max)
 
 relation member_1(N:node, Q:quorum_1)
 relation member_2(N:node, Q:quorum_2)

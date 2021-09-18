@@ -20,8 +20,8 @@ relation le(X:ballot, Y:ballot)
 instantiate total_order(le)
 individual negone:ballot
 axiom le(negone, X)
-individual max:ballot
-axiom le(X, max)
+#individual max:ballot
+#axiom le(X, max)
 
 individual none:value
 

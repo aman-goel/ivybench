@@ -43,8 +43,8 @@ instantiate total_order(le)
 # and it reads and writes to all keys
 individual zero:transaction
 axiom [here] le(zero, X)
-individual max:transaction
-axiom le(X, max)
+#individual max:transaction
+#axiom le(X, max)
 
 # Each operation reads and writes one key
 relation op_reads_key(Op: operation, K: key) # OP reads k

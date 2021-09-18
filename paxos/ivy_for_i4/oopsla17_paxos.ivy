@@ -36,8 +36,8 @@ instantiate total_order(le)
 
 individual negone:round
 axiom le(negone, X)
-individual max:round
-axiom le(X, max)
+#individual max:round
+#axiom le(X, max)
 
 relation member(N:node, Q:quorum)
 axiom forall Q1:quorum, Q2:quorum. exists N:node. member(N, Q1) & member(N, Q2)

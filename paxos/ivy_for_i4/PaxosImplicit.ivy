@@ -25,8 +25,8 @@ relation le(X:ballot, Y:ballot)
 instantiate total_order(le)
 individual negone:ballot
 axiom le(negone, X)
-individual max:ballot
-axiom le(X, max)
+#individual max:ballot
+#axiom le(X, max)
 
 relation member(A:acceptor, Q:quorum)
 axiom forall Q1, Q2. exists A:acceptor. member(A, Q1) & member(A, Q2)

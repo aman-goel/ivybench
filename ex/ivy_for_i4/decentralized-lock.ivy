@@ -18,8 +18,8 @@ function epoch(X: node): time
 individual first: node
 individual zero: time
 axiom le(zero, X)
-individual max: time
-axiom le(X, max)
+#individual max: time
+#axiom le(X, max)
 
 after init {
 	has_lock(X) := (X = first);
