@@ -1,0 +1,40 @@
+sort node
+
+mutable relation holds(node)
+mutable relation replied(node, node)
+mutable relation requested(node, node)
+
+init !holds(N)
+init !replied(N1, N2)
+init !requested(N1, N2)
+
+transition request(requester: node, responder: node)
+    modifies requested
+        & !old(requested(requester, responder))
+        & !(requester = responder)
+        & (requested(N1, N2) <-> old(requested(N1, N2)) | (N1 = requester & N2 = responder))
+
+transition reply(requester: node, responder: node)
+    modifies requested, replied
+        & !old(replied(requester, responder))
+        & !old(holds(responder))
+        & !old(replied(responder, requester))
+        & old(requested(requester, responder))
+        & !(requester = responder)
+        & (requested(N1, N2) <-> old(requested(N1, N2)) & !(N1 = requester & N2 = responder))
+        & (replied(N1, N2) <-> old(replied(N1, N2)) | (N1 = requester & N2 = responder))
+
+transition enter(requester: node) 
+    modifies holds
+        & N != requester -> old(replied(requester, N))
+        & (holds(N) <-> old(holds(N)) | (N = requester))
+        & holds(requester)
+
+transition leave(requester: node) 
+    modifies holds, replied
+        & old(holds(requester))
+        & (holds(N) <-> old(holds(N)) & !(N = requester))
+        & (replied(N1, N2) <-> old(replied(N1, N2)) & !(N1 = requester))
+        & !replied(requester, N)
+
+safety holds(N1) & holds(N2) -> N1 = N2

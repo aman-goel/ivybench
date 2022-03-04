@@ -1,143 +1,35 @@
 (declare-sort epoch 0)
 (declare-sort node 0)
 
-(define-fun .epoch ((S epoch)) epoch (! S :sort 0))
+(define-fun .epoch ((S epoch)) epoch (! S :sort 4))
 (define-fun .node ((S node)) node (! S :sort 2))
 
-(declare-fun __a (node epoch) Bool)
-(declare-fun __a_implications () Bool)
-(declare-fun __aa () Bool)
 (declare-fun __ep (node) epoch)
-(declare-fun __g (node) Bool)
-(declare-fun __g_implications () Bool)
-(declare-fun __ga () Bool)
-(define-fun .g ((V0 node)) Bool (! (__g V0) :next g))
 (declare-fun __held (node) Bool)
 (declare-fun __locked (epoch node) Bool)
 (declare-fun __transfer (epoch node) Bool)
 
-(declare-fun a (node epoch) Bool)
-(declare-fun a_implications () Bool)
-(declare-fun aa () Bool)
 (declare-fun ep (node) epoch)
-(declare-fun g (node) Bool)
-(declare-fun g_implications () Bool)
-(declare-fun ga () Bool)
-(declare-fun gg () Bool)
 (declare-fun held (node) Bool)
 (declare-fun locked (epoch node) Bool)
 (declare-fun transfer (epoch node) Bool)
 
-(declare-fun __aa () Bool)
-(define-fun .a_implications () Bool (! __a_implications :next a_implications))
-(define-fun .aa () Bool (! __aa :next aa))
 (define-fun .ep ((V0 node)) epoch (! (__ep V0) :next ep))
-(define-fun .g ((V0 node)) Bool (! (__g V0) :next g))
-(define-fun .g_implications () Bool (! __g_implications :next g_implications))
-(define-fun .ga () Bool (! __ga :next ga))
-(define-fun .gg () Bool (! __gg :next gg))
 (define-fun .held ((V0 node)) Bool (! (__held V0) :next held))
 (define-fun .locked ((V0 epoch) (V1 node)) Bool (! (__locked V0 V1) :next locked))
 (define-fun .transfer ((V0 epoch) (V1 node)) Bool (! (__transfer V0 V1) :next transfer))
 
 (declare-fun first () node)
 (declare-fun le (epoch epoch) Bool)
+(declare-fun max () epoch)
 (declare-fun zero () epoch)
 
 (define-fun .first () node (! first :global true))
 (define-fun .le ((V0 epoch) (V1 epoch)) Bool (! (le V0 V1) :global true))
+(define-fun .max () epoch (! max :global true))
 (define-fun .zero () epoch (! zero :global true))
 
-(declare-fun __m_a (node epoch) Bool)
-(declare-fun __m_a_implications () Bool)
-(declare-fun __m_aa () Bool)
-(declare-fun __m_g_implications () Bool)
-(declare-fun __m_ga () Bool)
 (declare-fun __ts0_a () Bool)
-
-(define-fun .def___a () Bool (! 
- (let (($v (forall ((V0 node) (V1 epoch)) (= (__a V0 V1) (and (not (le V1 (__ep V0))) (__transfer V1 V0))))
- ))
- (and $v))
- :definition __a))
-
-(define-fun .def___a_implications () Bool (! 
- (let (($v (= __a_implications (forall ((I node) (J node) (X epoch) (Y epoch)) (=> (__a I X) (and (not (le X (__ep J))) (=> (le X Y) (not (__locked Y J)))))))
- ))
- (and $v))
- :definition __a_implications))
-
-(define-fun .def___aa () Bool (! 
- (let (($v (= __aa (forall ((I node) (J node) (X epoch) (Y epoch)) (=> (and (__a I X) (__a J Y)) (and (= I J) (= X Y)))))
- ))
- (and $v))
- :definition __aa))
-
-(define-fun .def___g () Bool (! 
- (let (($v (forall ((V0 node)) (= (__g V0) (__held V0)))
- ))
- (and $v))
- :definition __g))
-
-(define-fun .def___g_implications () Bool (! 
- (let (($v (= __g_implications (forall ((I node) (J node) (X epoch)) (=> (__g I) (and (le (__ep J) (__ep I)) (=> (not (le X (__ep I))) (and (not (__transfer X J)) (not (__locked X J)))) (=> (__locked (__ep I) J) (= I J))))))
- ))
- (and $v))
- :definition __g_implications))
-
-(define-fun .def___ga () Bool (! 
- (let (($v (= __ga (forall ((I node) (J node) (X epoch)) (not (and (__g I) (__a J X)))))
- ))
- (and $v))
- :definition __ga))
-
-(define-fun .def___gg () Bool (! 
- (let (($v (= __gg (forall ((I node) (J node)) (=> (and (__g I) (__g J)) (= I J))))
- ))
- (and $v))
- :definition __gg))
-
-(define-fun .def_a () Bool (! 
- (let (($v (forall ((V0 node) (V1 epoch)) (= (a V0 V1) (and (not (le V1 (ep V0))) (transfer V1 V0))))
- ))
- (and $v))
- :definition a))
-
-(define-fun .def_a_implications () Bool (! 
- (let (($v (= a_implications (forall ((I node) (J node) (X epoch) (Y epoch)) (=> (a I X) (and (not (le X (ep J))) (=> (le X Y) (not (locked Y J)))))))
- ))
- (and $v))
- :definition a_implications))
-
-(define-fun .def_aa () Bool (! 
- (let (($v (= aa (forall ((I node) (J node) (X epoch) (Y epoch)) (=> (and (a I X) (a J Y)) (and (= I J) (= X Y)))))
- ))
- (and $v))
- :definition aa))
-
-(define-fun .def_g () Bool (! 
- (let (($v (forall ((V0 node)) (= (g V0) (held V0)))
- ))
- (and $v))
- :definition g))
-
-(define-fun .def_g_implications () Bool (! 
- (let (($v (= g_implications (forall ((I node) (J node) (X epoch)) (=> (g I) (and (le (ep J) (ep I)) (=> (not (le X (ep I))) (and (not (transfer X J)) (not (locked X J)))) (=> (locked (ep I) J) (= I J))))))
- ))
- (and $v))
- :definition g_implications))
-
-(define-fun .def_ga () Bool (! 
- (let (($v (= ga (forall ((I node) (J node) (X epoch)) (not (and (g I) (a J X)))))
- ))
- (and $v))
- :definition ga))
-
-(define-fun .def_gg () Bool (! 
- (let (($v (= gg (forall ((I node) (J node)) (=> (and (g I) (g J)) (= I J))))
- ))
- (and $v))
- :definition gg))
 
 (define-fun .prop () Bool (! 
  (let (($v (forall ((N1 node) (N2 node)) (=> (__held N1) (le (__ep N2) (__ep N1))))
@@ -146,7 +38,7 @@
  :invar-property 0))
 
 (define-fun .axiom () Bool (! 
- (let (($v (and (forall ((X epoch)) (le X X)) (forall ((X epoch) (Y epoch) (Z epoch)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X epoch) (Y epoch)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X epoch) (Y epoch)) (or (le X Y) (le Y X))) (forall ((X epoch)) (le zero X)))
+ (let (($v (and (forall ((X epoch)) (le X X)) (forall ((X epoch) (Y epoch) (Z epoch)) (=> (and (le X Y) (le Y Z)) (le X Z))) (forall ((X epoch) (Y epoch)) (=> (and (le X Y) (le Y X)) (= X Y))) (forall ((X epoch) (Y epoch)) (or (le X Y) (le Y X))) (forall ((X epoch)) (le zero X)) (forall ((X epoch)) (le X max)))
  ))
  (and $v))
  :axiom true))
@@ -158,7 +50,7 @@
  :init true))
 
 (define-fun .action_ext:accept () Bool (! 
- (let (($v (exists ((V__fml:e epoch) (V__fml:n node)) (and (forall ((V0 node)) (= (held V0) (ite __ts0_a (ite (= V0 V__fml:n) true (__held V0)) (__held V0)))) (forall ((V0 epoch) (V1 node)) (= (locked V0 V1) (ite __ts0_a (ite (and (= V0 V__fml:e) (= V1 V__fml:n)) true (__locked V0 V1)) (__locked V0 V1)))) (forall ((V0 node)) (= (ep V0) (ite __ts0_a (ite (= V0 V__fml:n) V__fml:e (__ep V0)) (__ep V0)))) (= __ts0_a (not (le V__fml:e (__ep V__fml:n)))) (__transfer V__fml:e V__fml:n) (forall ((X0 epoch) (X1 node)) (or (not (transfer X0 X1)) (__transfer X0 X1) (= X0 V__fml:e))) (forall ((X0 epoch) (X1 node)) (or (not (transfer X0 X1)) (__transfer X0 X1) (= X1 V__fml:n))) (forall ((X0 epoch) (X1 node)) (or (transfer X0 X1) (not (__transfer X0 X1)) (= X0 V__fml:e))) (forall ((X0 epoch) (X1 node)) (or (transfer X0 X1) (not (__transfer X0 X1)) (= X1 V__fml:n))) (or __ts0_a (= aa __m_aa)) (forall ((V0 node)) (or __ts0_a (= (g V0) (__g V0)))) (or __ts0_a (= gg __gg)) (or __ts0_a (= ga __m_ga)) (or __ts0_a (= a_implications __m_a_implications)) (forall ((V0 node) (V1 epoch)) (or __ts0_a (= (a V0 V1) (__m_a V0 V1)))) (or __ts0_a (= g_implications __m_g_implications))))
+ (let (($v (exists ((V__fml:e epoch) (V__fml:n node)) (and (forall ((V0 node)) (= (held V0) (ite __ts0_a (ite (= V0 V__fml:n) true (__held V0)) (__held V0)))) (forall ((V0 epoch) (V1 node)) (= (locked V0 V1) (ite __ts0_a (ite (and (= V0 V__fml:e) (= V1 V__fml:n)) true (__locked V0 V1)) (__locked V0 V1)))) (forall ((V0 node)) (= (ep V0) (ite __ts0_a (ite (= V0 V__fml:n) V__fml:e (__ep V0)) (__ep V0)))) (= __ts0_a (not (le V__fml:e (__ep V__fml:n)))) (__transfer V__fml:e V__fml:n) (forall ((X0 epoch) (X1 node)) (or (not (transfer X0 X1)) (__transfer X0 X1) (= X0 V__fml:e))) (forall ((X0 epoch) (X1 node)) (or (not (transfer X0 X1)) (__transfer X0 X1) (= X1 V__fml:n))) (forall ((X0 epoch) (X1 node)) (or (transfer X0 X1) (not (__transfer X0 X1)) (= X0 V__fml:e))) (forall ((X0 epoch) (X1 node)) (or (transfer X0 X1) (not (__transfer X0 X1)) (= X1 V__fml:n)))))
  ))
  (and $v))
  :action ext:accept))

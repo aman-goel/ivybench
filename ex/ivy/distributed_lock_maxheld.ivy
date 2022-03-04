@@ -32,6 +32,8 @@ relation le(X:epoch, Y:epoch)
 instantiate total_order(le)
 individual zero:epoch
 axiom le(zero, X)
+individual max:epoch
+axiom le(X, max)
 
 function ep(N:node) : epoch # ep(n) is the current epoch of node n
 
@@ -82,82 +84,3 @@ export accept
 
 # the safety property
 invariant held(N1) -> le(ep(N2), ep(N1))
-
-####################################################################################
-#
-# Predicates that encode the enabling conditions of the protocol actions.
-# These predicates allow the construction of an predicate abstraction of the
-# protocol actions parameterized by its types (nodes and epochs).  
-
-####################################################################################
-# predicate g(I) is the enabling condition for the grant action of node I 
-relation g(I:node)
-definition g(I) = (held(I))
-
-# predicate a(I, X) is the enabling condition for the accept action of node I at epoch X
-relation a(I:node, X:epoch)
-definition a(I, X) = (~le(X, ep(I)) & transfer(X, I))
-####################################################################################
-
-####################################################################################
-# Predicates that encode the constraints of forward reachability, i.e.,
-# the Boolean combinations of action enabling conditions that are reachable from the
-# specified initial state(s). These are inferred from performing forward image
-# computation on the predicate abstraction of the protocol's action . Assuming that the
-# protocol can be verified using a finite instance of just n nodes (for this protocol
-# n = 2), the size of this abstract space is 2^{#actions} x 2^{n}. The sparsity of action
-# updates (i.e., that an action changes only a small number of state variables) ensures
-# that the spatially-reachable action combinations are much smaller than the total size
-# of the abstract state space.
-# These predicates are found by solving for a minimal expression of the reachable action combinations using a logic minimizer (e.g., espresso)
-####################################################################################
-
-# Predicate gg ensures that only one node can be granting
-relation gg
-definition gg = (forall I:node, J:node. g(I) & g(J) -> (I = J))
-
-# Predicate aa ensures that only one node can be accepting
-relation aa
-definition aa = (forall I:node, J:node, X:epoch, Y:epoch. a(I, X) & a(J, Y) -> (I = J) & (X = Y))
-
-# Predicate ga ensures that simultaneous granting and accepting actions cannot occur 
-relation ga
-definition ga = (forall I:node, J:node, X:epoch. ~(g(I) & a(J, X)))
-
-####################################################################################
-#
-# Predicates that encode the constraints of "temporal" reachability. The abstraction of protocol actions is
-# an over-approximation that does not account for the temporal
-# relations involving the state variables that depend on the totally-ordered epoch
-# parameter of the protocol; these include ep, transfer, and locked.
-#
-# These constraints must be derived by performing a symbolic analysis 
-# to determine the implications of the reachable action combinations
-# on the temporal state variables.
-#
-# Alternatively, IC3-style incremental induction can be performed from each of the
-# abstract states encoding a reachable action combination.
-#
-####################################################################################
-
-relation g_implications
-definition g_implications =
-	(forall I:node, J:node, X:epoch. g(I) -> 
-		le(ep(J), ep(I)) &				# granting node must have highest epoch
-		(~le(X, ep(I)) ->				# transfer and locked must be false
-			~transfer(X, J) & ~locked(X, J)) &	# at all future epoch for all nodes
-		(locked(ep(I), J) -> (I = J))			# only node I can lock at its own epoch 	
-	)
-relation a_implications
-definition a_implications =
-	(forall I:node, J:node, X:epoch, Y:epoch. a(I, X) ->
-		~le(X, ep(J)) &						# accepting node must have highest epoch
-		(le(X, Y) -> ~locked(Y, J))				# no other node can lock at a higher epoch
-	)
-
-####################################################################################
-#
-# Strengthening assertion is the conjunction of the reachable action combinations and their temporal implications.
-#
-####################################################################################
-#invariant [manual_1] gg & aa & ga & g_implications & a_implications

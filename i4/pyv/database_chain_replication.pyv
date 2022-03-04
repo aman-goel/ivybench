@@ -10,6 +10,8 @@ axiom le(X, Y) & le(Y, X) -> X = Y
 axiom le(X, Y) | le(Y, X)
 immutable constant zero:transaction
 axiom le(zero, X)
+immutable constant max:transaction
+axiom le(X, max)
 
 immutable relation op_reads_key(operation, key) @no_minimize
 axiom (op_reads_key(X, Y1) & op_reads_key(X, Y2)) -> Y1 = Y2

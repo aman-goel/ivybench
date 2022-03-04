@@ -1,0 +1,70 @@
+sort node
+sort block
+sort time
+sort transaction
+
+immutable relation le(time, time)
+
+axiom le(X, X)                        # Reflexivity
+axiom le(X, Y) & le(Y, Z) -> le(X, Z)  # Transitivity
+axiom le(X, Y) & le(Y, X) -> X = Y    # Anti-symmetry
+axiom le(X, Y) | le(Y, X)             # Totality
+
+immutable relation leader(node, time)
+
+axiom leader(N1,T) & leader(N2,T) -> N1 = N2
+axiom leader(N,T1) & leader(N,T2) -> T1 = T2
+
+immutable relation honest(node)
+
+mutable relation broadcastable(node, block, time)
+mutable relation broadcasted(node)
+mutable relation block_found(node, block, time)
+mutable relation block_confirmed(node, block, time)
+mutable relation transaction_time(transaction, time)
+mutable relation transaction_in_block(transaction, block)
+mutable relation transaction_confirmed(transaction, node)
+
+init !block_found(N,B,T)
+init !block_confirmed(N,B,T)
+init !transaction_in_block(TR,B)
+init !transaction_confirmed(TR,N) 
+init !broadcasted(N)
+init !broadcastable(N,B,T)
+
+transition find_block(n:node, b:block, t:time) 
+    modifies block_found
+        & leader(n,t)
+        & (block_found(N,B,T) <-> old(block_found(N,B,T)) | (N=n & B=b & T=t))
+
+transition add_transaction(tr:transaction, b:block) 
+    modifies transaction_in_block
+        & (transaction_in_block(TR,B) <-> old(transaction_in_block(TR,B)) | (TR=tr & B=b))
+
+transition begin_broadcast(n:node, b:block, t:time) 
+    modifies broadcastable
+        & leader(n,t) & old(block_found(n,b,t)) & !old(broadcasted(n))
+        & (broadcastable(N,B,T) <-> old(broadcastable(N,B,T)) | (N=n & B=b & T=t))
+
+transition byzantine_broadcast(n:node, b:block, t:time) 
+    modifies block_confirmed, broadcasted, broadcastable, transaction_confirmed
+        & old(broadcastable(n,b,t))
+        & ((honest(n) & old(transaction_time(TR,T)) & le(T,t) & !old(transaction_confirmed(TR,N))) -> old(transaction_in_block(TR,b)))
+        & ((honest(n) & old(transaction_in_block(TR,b))) -> (old(transaction_time(TR,T)) & le(T,t) & !old(transaction_confirmed(TR,N))))
+        & (T != t -> (block_confirmed(N,B,T) <-> old(block_confirmed(N,B,T))))
+        & (broadcasted(N) <-> old(broadcasted(N)) | (N = n))
+        & (broadcastable(N,B,T) <-> old(broadcastable(N,B,T)) & !(N = n & B = b & T = t))
+        & (honest(N) & T = t -> !(B1 != B2 & block_confirmed(N,B1,T) & block_confirmed(N,B2,T)))
+        & (honest(N1) & honest(N2) & T = t -> (block_confirmed(N1,b,T) & block_confirmed(N2,b,T)) | (!block_confirmed(N1,B,T) & !block_confirmed(N2,B,T)))
+        & (honest(n) & honest(N) & B = b & T = t -> block_confirmed(N,B,T))
+        & (transaction_confirmed(TR,N) <-> old(transaction_confirmed(TR,N)) | old(transaction_in_block(TR,b)))
+
+transition sabotage(n:node) 
+    modifies block_confirmed, transaction_confirmed
+        & !honest(n)
+        & (N != n -> (block_confirmed(N,B,T) <-> old(block_confirmed(N,B,T))))
+        & (N != n -> (transaction_confirmed(TR,N) <-> old(transaction_confirmed(TR,N))))
+
+safety	(honest(N1) & honest(N2) -> (block_confirmed(N1,B,T) & block_confirmed(N2,B,T)) | (!block_confirmed(N1,B,T) & !block_confirmed(N2,B,T))) &
+		(honest(N1) & honest(N2) -> (transaction_confirmed(TR,N1) & transaction_confirmed(TR,N2)) | (!transaction_confirmed(TR,N1) & !transaction_confirmed(TR,N2))) &
+		(honest(N) & leader(N,T2) & transaction_time(TR,T1) & le(T1,T2) & broadcasted(N) & honest(N1) -> transaction_confirmed(TR,N1))
