@@ -1,0 +1,109 @@
+#lang ivy1.7
+
+# Source: The Extended UTXO Model https://fc20.ifca.ai/wtsc/WTSC2020/WTSC20_paper_25.pdf
+
+
+type destination
+type value
+type deadline
+type signature
+type quorum
+
+relation holding
+relation collect(K:destination, V:value, D:deadline)
+
+relation sig(K:destination, V:value, D:deadline, S:signature)
+relation sig_auth(S:signature)
+
+relation proposed(K:destination, V:value, D:deadline)
+relation paid(K:destination, V:value, D:deadline)
+relation cancelled(K:destination, V:value, D:deadline)
+
+relation expired(D:deadline)
+
+relation member(S:signature, Q:quorum)
+axiom forall Q1:quorum, Q2:quorum. exists S:signature. member(S, Q1) & member(S, Q2)
+
+relation chosenAt(Q:quorum, K:destination, V:value, D:deadline) = forall S. member(S, Q) -> sig(K, V, D, S)
+relation chosen(K:destination, V:value, D:deadline) = exists Q. chosenAt(Q, K, V, D)
+
+after init  {
+	holding := true;
+	collect(K, V, D) := false;
+	
+	proposed(K, V, D) := false;
+	paid(K, V, D) := false;
+	cancelled(K, V, D) := false;
+
+	sig(K, V, D, S) := false;
+}
+
+action propose(k:destination, v:value, d:deadline) = {
+    require holding;
+    require ~collect(k, v, d);
+    require ~paid(k, v, d);
+    
+    holding := false;
+    collect(k, v, d) := true;
+    sig(k, v, d, S) := false;
+    proposed(k, v, d) := true;
+}
+
+action add_sig(k:destination, v:value, d:deadline, s:signature) = {
+	require collect(k, v, d);
+    require ~expired(d);
+    require sig_auth(s);
+    
+    sig(k, v, d, s) := true;
+}
+
+action pay(k:destination, v:value, d:deadline) = {
+	require collect(k, v, d);
+	require ~expired(d);
+	require chosen(k, v, d);
+	
+	paid(k, v, d) := true;
+    holding := true;
+    collect(k, v, d) := false;
+}
+
+action cancel(k:destination, v:value, d:deadline) = {
+	require collect(k, v, d);
+	require expired(d);
+
+	cancelled(k, v, d) := true;
+    holding := true;
+    collect(k, v, d) := false;
+}
+
+action expire(d:deadline) = {
+	
+    expired(d) := true;
+}
+
+
+export propose
+export add_sig
+export pay
+export cancel
+export expire
+
+# safety property:
+
+# we can only cancel after the deadline
+invariant cancelled(K, V, D) -> expired(D)
+
+# we can only make a payment if we have enough signatures and the signatures are valid
+invariant paid(K, V, D) -> (exists Q. forall S. member(S, Q) -> (sig(K, V, D, S) & sig_auth(S)))
+
+# if the payment is made then the recipient is one proposed in the proposal
+invariant paid(K, V, D) -> proposed(K, V, D)
+
+
+### Proof certificate: #5 -- generated from ic3po
+#invariant [ic3po_prop1]	(forall D, K, V . (cancelled(K, V, D) -> expired(D)))
+#invariant [ic3po_prop2]	(forall D, K, V . (paid(K, V, D) -> proposed(K, V, D)))
+#invariant [ic3po_prop3]	(forall D, K, V . (paid(K, V, D) -> (exists Q . (forall S . (member(S, Q) -> (sig(K, V, D, S) & sig_auth(S)))))))
+#invariant [ic3po_global3]	(forall D1, V1, D2 . (collect(D2, V1, D1) -> proposed(D2, V1, D1)))
+#invariant [ic3po_global1]	(forall S1, D1, V1, D2 . (sig(D2, V1, D1, S1) -> sig_auth(S1)))
+###
